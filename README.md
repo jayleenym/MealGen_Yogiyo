@@ -2,7 +2,7 @@
 
 this repository is for crawling restaurant's menu & reviews in yogiyo, and preprocessing data.
 
-### TABLE 1: restaurant_info
+<!-- ### TABLE 1: restaurant_info
 - _id (PK)
 - restaurant_id : yogiyo 식당 고유 번호(unique)
 - company_id : 사업자등록번호
@@ -45,4 +45,6 @@ this repository is for crawling restaurant's menu & reviews in yogiyo, and prepr
 - taste_rating : 맛 평점
 - delivery_rating : 배달 평점
 - rating : 평점
-- like_dislike : 2.5이상 1, 미만 0
+- like_dislike : 2.5이상 1, 미만 0 -->
+
+- 주소 출처: [도로명주소 개발자센터](https://www.juso.go.kr/addrlink/addressBuildDevNew.do?menu=jusuip)
