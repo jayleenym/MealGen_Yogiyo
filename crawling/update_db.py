@@ -278,7 +278,7 @@ class UpdateMealgen():
                 'written_time' : rev['time'],
                 'nickname' : rev['nickname'],
                 'user_id' : rev['id'],
-                'restaurant_id' : id,
+                'restaurant_id' : restaurant_id,
                 'menu' : rev['menu_summary'],
                 'menu_id' : m_id, # default -1
                 'comment' : rev['comment'],
@@ -293,14 +293,13 @@ class UpdateMealgen():
                     review['like_dislike'] = 1
         
                 REVIEWS.append(review)
-                print(review)
+                json.dump(REVIEWS, open(f'./reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t')
                 insert(self.controller, table_name = "reviews", line = review)
                 self.controller.conn.commit()
                 r += 1
             else: 
                 r += 1
                 break
-            json.dump(REVIEWS, open(f'./reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t')
         return len(REVIEWS)
 
 
