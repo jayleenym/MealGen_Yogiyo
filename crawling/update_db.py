@@ -385,7 +385,7 @@ class UpdateMealgen():
 
 
 if __name__ == "__main__":
-    server = UpdateMealgen(file = "connection.txt")
+    server = UpdateMealgen(file = "../connection.txt")
     server.controller._connection_info()
 
     # daily crawling
