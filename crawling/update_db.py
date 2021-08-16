@@ -293,8 +293,7 @@ class UpdateMealgen():
                     review['like_dislike'] = 1
         
                 REVIEWS.append(review)
-                json.dump(REVIEWS, open(f'reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t',
-                            default = json_default)
+                json.dump(REVIEWS, open(f'./reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t')
                 insert(self.controller, table_name = "reviews", line = review)
                 self.controller.conn.commit()
                 r += 1
