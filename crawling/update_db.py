@@ -246,7 +246,7 @@ class UpdateMealgen():
 
 
     def reviews(self, restaurant_id, REVIEWS, yesterday = yesterday):
-        response = requests.get(f"httpsL//www.yogiyo.co.kr/api/v1/reviews/{restaurant_id}/").json()
+        response = requests.get(f"https://www.yogiyo.co.kr/api/v1/reviews/{restaurant_id}/").json()
         r = 0
         while (r < len(response)):
             rev = response[r]
