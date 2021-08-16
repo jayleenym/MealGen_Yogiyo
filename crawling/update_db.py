@@ -279,7 +279,7 @@ class UpdateMealgen():
                           'nickname' : rev['nickname'],
                           'user_id' : rev['id'],
                           'restaurant_id' : restaurant_id,
-                          'menu' : rev['menu_summary'],
+                          'menu' : rev['menu_summary'].replace("'", ""),
                           'menu_id' : m_id, # default -1
                           'review' : rev['comment'],
                           'quantity' : rev['rating_quantity'],
@@ -305,7 +305,7 @@ class UpdateMealgen():
 
 
     def preprocess_rev(self):
-        # 인식하기 어려운 작은따옴표 생략
+        # 제거되지 않은 ' 없애기
         q = '''UPDATE reviews SET menu = replace(menu, "'", "");'''
         self.controller.curs.execute(q)
         self.controller.conn.commit()
