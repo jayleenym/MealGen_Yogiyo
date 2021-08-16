@@ -265,7 +265,7 @@ class UpdateMealgen():
 
             # menu_id 배정
             m = re.findall('(.*?)/[0-9]+', rev['menu_summary'])[0]
-            q1 = f"SELECT menu_id FROM menu_info WHERE name = '{m} AND restaurant_id = {rev['id']};"
+            q1 = f"SELECT menu_id FROM menu_info WHERE name = '{m}' AND restaurant_id = {rev['id']};"
             self.controller.curs.execute(q1)
             try:
                 m_id = self.controller.curs.fetchone()[0]
