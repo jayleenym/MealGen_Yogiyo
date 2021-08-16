@@ -275,20 +275,21 @@ class UpdateMealgen():
             # yesterday (변경가능) ~ today까지
             if (rev['time'] >= yesterday) and (rev['time'] < today):
                 review = {
-                'written_time' : rev['time'],
-                'nickname' : rev['nickname'],
-                'user_id' : rev['id'],
-                'restaurant_id' : restaurant_id,
-                'menu' : rev['menu_summary'],
-                'menu_id' : m_id, # default -1
-                'comment' : rev['comment'],
-                'quantity' : rev['rating_quantity'],
-                'taste' : rev['rating_taste'],
-                'delivery' : rev['rating_delivery'],
-                'rating' : rev['rating'],
-                'like_dislike' : int(bool(rev['rating'] >= 2.5)) * 5,
-                'updated_at' : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }
+                          'written_time' : rev['time'],
+                          'nickname' : rev['nickname'],
+                          'user_id' : rev['id'],
+                          'restaurant_id' : restaurant_id,
+                          'menu' : rev['menu_summary'],
+                          'menu_id' : m_id, # default -1
+                          'review' : rev['comment'],
+                          'quantity' : rev['rating_quantity'],
+                          'taste' : rev['rating_taste'],
+                          'delivery' : rev['rating_delivery'],
+                          'rating' : rev['rating'],
+                          'like_dislike' : int(bool(rev['rating'] >= 2.5)) * 5,
+                          'updated_at' : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                          }
+             
                 if review['like_dislike'] == 0:
                     review['like_dislike'] = 1
         
