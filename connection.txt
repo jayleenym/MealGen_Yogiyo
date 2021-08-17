@@ -1,0 +1,1 @@
+mealgen-db-real-cluster.cluster-ch1v7vb7kdnw.ap-northeast-2.rds.amazonaws.com,3306,mealgen,altlrdmltleo1!,mealgen
