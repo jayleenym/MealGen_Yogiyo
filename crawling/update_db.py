@@ -60,12 +60,12 @@ class UpdateMealgen():
         
 
     def restaurant_information(self, file):
-        if file.endswith('txt'):
-            city = pd.read_csv(f"{address_path}/{file}", sep = '|', header = None, encoding = 'euc-kr')
-            city.columns = txt_headers
-            city = city.drop_duplicates(subset = '읍면동명', ignore_index = True) # 읍면동명(세종시: 구 없음)
+        if file.endswith('csv'):
+#             city = pd.read_csv(f"{address_path}/{file}", sep = '|', header = None, encoding = 'euc-kr')
+#             city.columns = txt_headers
+#             city = city.drop_duplicates(subset = '읍면동명', ignore_index = True) # 읍면동명(세종시: 구 없음)
             # print(f"\n########## {city['시도명'][0]} ###########") 
-            
+            city = pd.read_csv(f"{address_path}/{file}")
         driver = webdriver.Chrome(executable_path = chromedriver_path)
         RESTAURANTS = []
 #         i = 0
