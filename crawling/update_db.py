@@ -159,7 +159,7 @@ class UpdateMealgen():
 
 
                     RESTAURANTS.append(restaurant)
-                    json.dump(RESTAURANTS, open(f'restaurant_info_{today}.json', "w"), ensure_ascii=False, indent='\t')
+                    json.dump(RESTAURANTS, open(f'./restaurant_info_{today}.json', "w"), ensure_ascii=False, indent='\t')
 #                     j += 1
                 p += 1
 #             i += 1 
