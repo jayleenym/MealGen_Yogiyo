@@ -290,12 +290,12 @@ class UpdateMealgen():
                           'taste' : rev['rating_taste'],
                           'delivery' : rev['rating_delivery'],
                           'rating' : rev['rating'],
-                          'like_dislike' : int(bool(rev['rating'] >= 2.5)) * 5,
+                          'like_dislike' : int(bool(rev['rating'] >= 2.5)),
                           'updated_at' : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                           }
              
-                if review['like_dislike'] == 0:
-                    review['like_dislike'] = 1
+                # if review['like_dislike'] == 0:
+                    # review['like_dislike'] = 1
         
                 REVIEWS.append(review)
                 json.dump(REVIEWS, open(f'./reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t')
