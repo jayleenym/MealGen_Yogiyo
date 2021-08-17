@@ -68,8 +68,9 @@ class UpdateMealgen():
             
         driver = webdriver.Chrome(executable_path = chromedriver_path)
         RESTAURANTS = []
-        i = 0
-        while (i < len(city)):
+#         i = 0
+#         while (i < len(city)):
+        for i in range(len(city)):
             p = 0
             while(1):
                 params = {
@@ -85,8 +86,9 @@ class UpdateMealgen():
                 json_data = requests.get(url, params = params, headers = API_header).json()
                 if len(json_data['restaurants']) == 0: break
                 
-                j = 0
-                while (j < len(json_data['restaurants'])):
+#                 j = 0
+#                 while (j < len(json_data['restaurants'])):
+                  for j in range(len(json_data['restaurants'])):
                     res = json_data['restaurants'][j]
 
                     q = f"SELECT count(*) FROM restaurant_info WHERE restaurant_id = {res['id']}"
@@ -95,7 +97,7 @@ class UpdateMealgen():
                     
                     # review 수 업데이트
                     if result[0] > 0:
-                        q = f"UPDATE restaurant_info SET review_count = {res['review_count']} WHERE restaurant_id = {res['id']}"
+                        q = f"UPDATE restaurant_info SET review_count = {res['review_count']} WHERE restaurant_id = {res['id']};"
                         self.controller.curs.execute(q)
                         self.controller.conn.commit()
                         j += 1
@@ -158,9 +160,9 @@ class UpdateMealgen():
 
                     RESTAURANTS.append(restaurant)
                     json.dump(RESTAURANTS, open(f'restaurant_info_{today}.json', "w"), ensure_ascii=False, indent='\t')
-                    j += 1
+#                     j += 1
                 p += 1
-            i += 1 
+#             i += 1 
         driver.close()
         return len(RESTAURANTS)
 
@@ -247,8 +249,9 @@ class UpdateMealgen():
 
     def reviews(self, restaurant_id, REVIEWS, yesterday = yesterday):
         response = requests.get(f"https://www.yogiyo.co.kr/api/v1/reviews/{restaurant_id}/").json()
-        r = 0
-        while (r < len(response)):
+#         r = 0
+#         while (r < len(response)):
+          for r in range(len(response)):
             rev = response[r]
 
             # 빈 메뉴 선택 생략
@@ -391,6 +394,6 @@ if __name__ == "__main__":
     # daily crawling
     server.crawl_restaurant()
     server.crawl_menu()
-    server.crawl_review(input())
+    server.crawl_review(yesterday)
 
     server.controller.curs.close()
