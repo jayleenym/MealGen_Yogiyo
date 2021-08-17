@@ -393,8 +393,8 @@ if __name__ == "__main__":
     server.controller._connection_info()
 
     # daily crawling
-    # server.crawl_restaurant()
-    # server.crawl_menu()
-    # server.crawl_review(yesterday)
+    server.crawl_restaurant()
+    server.crawl_menu()
+    server.crawl_review(yesterday)
 
     server.controller.curs.close()
