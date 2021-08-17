@@ -43,8 +43,8 @@ options = webdriver.ChromeOptions()
 options.add_argument("headless")
 
 # Path
-chromedriver_path = '/Users/yejin/Desktop/chromedriver'
-address_path = '/Users/yejin/Desktop/Yogiyo/address/'
+chromedriver_path = './chromedriver'
+address_path = '../address/'
 
 
 class UpdateMealgen():
