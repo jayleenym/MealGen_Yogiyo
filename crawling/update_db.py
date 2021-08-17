@@ -98,9 +98,10 @@ class UpdateMealgen():
                     
                     # review 수 업데이트
                     if result[0] > 0:
-                        q = f"UPDATE restaurant_info SET review_count = {res['review_count']} WHERE restaurant_id = {res['id']};"
-                        self.controller.curs.execute(q)
-                        self.controller.conn.commit()
+                        # q = f"UPDATE restaurant_info SET review_count = {res['review_count']} \
+                            # WHERE restaurant_id = {res['id']} AND NOT review_count = {res['review_count']};"
+                        # self.controller.curs.execute(q)
+                        # self.controller.conn.commit()
                         j += 1
                         continue
 
@@ -370,7 +371,7 @@ class UpdateMealgen():
         print(f" - RESTAURANTS({today}) : {len(restaurants)}")
         for restaurant_id in tqdm(restaurants): 
             cnt += self.menu_information(restaurant_id, MENU)
-        self.preprocess_menu()
+            self.preprocess_menu()
         print(f"##### {cnt} menus updated {today}. ######")
     
 
@@ -382,8 +383,7 @@ class UpdateMealgen():
         print(f" - RESTAURANTS({today}) : {len(restaurants)}")
         for restaurant_id in tqdm(restaurants):       
             cnt += self.reviews(restaurant_id, REV, yesterday = sdate)
-
-        self.preprocess_rev()
+            self.preprocess_rev()
         print(f"##### {cnt} reviews updated {sdate} ~ {today}. ######")
 
 
