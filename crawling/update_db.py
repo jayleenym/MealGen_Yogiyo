@@ -43,8 +43,8 @@ options = webdriver.ChromeOptions()
 options.add_argument("headless")
 
 # Path
-chromedriver_path = './chromedriver'
-address_path = '../address/'
+chromedriver_path = './crawling/chromedriver'
+address_path = './address'
 
 
 class UpdateMealgen():
@@ -242,11 +242,14 @@ class UpdateMealgen():
 
 
     def preprocess_menu(self):
-        q = '''UPDATE menu_info SET name = replace(name, "'", "");
-               UPDATE menu_info SET description = NULL WHERE description = "";
-        '''
+        q = """      UPDATE menu_info SET name = replace(name, "'", ""); """
         self.controller.curs.execute(q)
         self.controller.conn.commit()
+
+        q2 = 'UPDATE menu_info SET description = NULL WHERE description = "";'
+        self.controller.curs.execute(q2)
+        self.controller.conn.commit()
+        
 
 
     def reviews(self, restaurant_id, REVIEWS, yesterday = yesterday):
@@ -394,7 +397,7 @@ if __name__ == "__main__":
 
     # daily crawling
     server.crawl_restaurant()
-    server.crawl_menu()
-    server.crawl_review(yesterday)
-
+    # server.crawl_menu()
+    # server.crawl_review(yesterday)
+# 
     server.controller.curs.close()

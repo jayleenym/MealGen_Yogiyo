@@ -84,6 +84,13 @@ CREATE TABLE reviews
 COMMENT '리뷰 데이터(yogiyo)';
 """
 
+user_res_predict = """
+CREATE TABLE user_res_predict
+(
+    
+)
+"""
+
 def table_creation(controller, tformat):
     try:
         controller.curs.execute(tformat)
