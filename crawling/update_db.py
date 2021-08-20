@@ -47,7 +47,7 @@ chromedriver_path = './crawling/chromedriver'
 address_path = './address'
 
 
-class UpdateMealgen():
+class UpdateCrawling():
     def __init__(self, file = None):
         if not file:
             _id = input("input id(root) : ")
@@ -60,17 +60,10 @@ class UpdateMealgen():
         self.controller = MysqlController(*connect_info)
         
 
-    def restaurant_information(self, file):
-        if file.endswith('csv'):
-#             city = pd.read_csv(f"{address_path}/{file}", sep = '|', header = None, encoding = 'euc-kr')
-#             city.columns = txt_headers
-#             city = city.drop_duplicates(subset = '읍면동명', ignore_index = True) # 읍면동명(세종시: 구 없음)
-            # print(f"\n########## {city['시도명'][0]} ###########") 
-            city = pd.read_csv(f"{address_path}/{file}")
-        driver = webdriver.Chrome(executable_path = chromedriver_path)
+    def restaurant_information(self, file, driver):
+        if file.endswith('csv'): city = pd.read_csv(f"{address_path}/{file}")
         RESTAURANTS = []
-#         i = 0
-        # while (i < len(city)):
+
         for i in range(len(city)):
             p = 0
             while(1):
@@ -165,14 +158,14 @@ class UpdateMealgen():
 #                     j += 1
                 p += 1
 #             i += 1 
-        driver.close()
+        # driver.close()
         return len(RESTAURANTS)
 
 
     def preprocess_res(self):
         q = '''
         UPDATE restaurant_info
-        SET phone = NULL, delivery_time = NULL
+        SET phone = NULL, delivery_time = NULL, 
             address = (CASE WHEN sido = '서울' THEN replace(replace(address, sido, '서울특별시'), '서울특별시특별시', '서울특별시')
                             WHEN sido = '인천' THEN replace(replace(address, sido, '인천광역시'), '인천광역시광역시', '인천광역시')
                             WHEN sido in ('경기', '경기동') THEN replace(address, sido, '경기도')
@@ -193,17 +186,19 @@ class UpdateMealgen():
               sido in ('서울', '인천', '경기', '경기동', '세종', '충남','대전', '대전시', 
                        '광주' , '울산' , '부산', '충북', '대구', '대구시', '전남', '경북', 
                        '경남', '제주');
-        
-        UPDATE restaurant_info 
-        SET sido = substring_index(address, " ", 1), 
-            sigungu = replace(substring_index(address, " ", 2), substring_index(address, " ", 1), "");
         '''
         self.controller.curs.execute(q)
         self.controller.conn.commit()
 
+        q = '''
+        UPDATE restaurant_info 
+        SET sido = substring_index(address, " ", 1),
+            sigungu = replace(substring_index(address, " ", 2), substring_index(address, " ", 1), "");'''
+        self.controller.curs.execute(q)
+        self.controller.conn.commit()
 
     def menu_information(self, restaurant_id, MENUS):
-        response = requests.get(f"https://www.yogiyo.co.kr/api/v1/restaurants/{str(restaurant_id)}/menu", headers=API_header)
+        response = requests.get(f"https://www.yogiyo.co.kr/api/v1/restaurants/{restaurant_id}/menu", headers=API_header)
         try:
             menu = response.json()
         except Exception as e:
@@ -242,7 +237,7 @@ class UpdateMealgen():
 
 
     def preprocess_menu(self):
-        q = """      UPDATE menu_info SET name = replace(name, "'", ""); """
+        q = """UPDATE menu_info SET name = replace(name, "'", ""); """
         self.controller.curs.execute(q)
         self.controller.conn.commit()
 
@@ -254,11 +249,8 @@ class UpdateMealgen():
 
     def reviews(self, restaurant_id, REVIEWS, yesterday = yesterday):
         response = requests.get(f"https://www.yogiyo.co.kr/api/v1/reviews/{restaurant_id}/").json()
-#         r = 0
-        # while (r < len(response)):
         for r in range(len(response)):
             rev = response[r]
-
             # 빈 메뉴 선택 생략
             if rev['menu_summary'] == "":
                 r += 1
@@ -272,14 +264,18 @@ class UpdateMealgen():
                 continue
 
             # menu_id 배정
-            m = re.findall('(.*?)/[0-9]+', rev['menu_summary'])[0]
-            q1 = f"SELECT menu_id FROM menu_info WHERE name = '{m}' AND restaurant_id = {rev['id']};"
-            self.controller.curs.execute(q1)
+            # m = re.findall('(.*?)/[0-9]+', rev['menu_summary'])[0]
+            # m_q1 = f"SELECT menu_id FROM menu_info WHERE name = '{m}' AND restaurant_id = {restaurant_id};"
+            # self.controller.curs.execute(m_q1)
+            # try:
+                # m_id = self.controller.curs.fetchone()[0]
+            # except:
+                # m_id = -1
             try:
-                m_id = self.controller.curs.fetchone()[0]
+                m_id = rev['menu_items']['id']
             except:
                 m_id = -1
-
+            
             # yesterday (변경가능) ~ today까지
             if (rev['time'] >= yesterday) and (rev['time'] < today):
                 review = {
@@ -338,7 +334,7 @@ class UpdateMealgen():
                 res.append(i[2])
             
             for i in tqdm(range(len(menus))):
-                q1 = f"SELECT count(*) FROM reviews WHERE menu LIKE '{menus[i]}%' AND restaurant_id = {res[i]} AND menu_id = 0;"
+                q1 = f"SELECT count(*) FROM reviews WHERE menu LIKE '{menus[i]}%' AND restaurant_id = {res[i]} AND menu_id = -1;"
                 self.controller.curs.execute(q1)
                 result = self.controller.curs.fetchone()
                 if result[0]==0: 
@@ -348,16 +344,18 @@ class UpdateMealgen():
                 q2 = f"UPDATE reviews SET menu_id = {id[i]} WHERE menu LIKE '{menus[i]}%' AND restaurant_id = {res[i]};"
                 self.controller.curs.execute(q2)
                 self.controller.conn.commit()
-
+        else: return
 
     # daily update
     def crawl_restaurant(self):
         cnt = 0
         print("****** INITIATING RESTAURANT CRAWLING *******")
+        driver = webdriver.Chrome(executable_path = chromedriver_path)
         for f in tqdm(os.listdir(address_path)): 
-            cnt += self.restaurant_information(f)
-        self.preprocess_res()
-        print(f"##### {cnt} restaurants added {today}. ######")
+            cnt += self.restaurant_information(f, driver)
+            self.preprocess_res()
+        driver.close()
+        print(f"****** {cnt} restaurants added {today}. ******")
 
 
     def get_all_restaurant_ids(self):
@@ -366,16 +364,16 @@ class UpdateMealgen():
         return list(zip(*self.controller.curs.fetchall()))[0]
 
 
-    def crawl_menu(self):
+    def crawl_menu(self, s = None, e = None):
         cnt = 0
         MENU = []
         restaurants = self.get_all_restaurant_ids()
         print("****** INITIATING MENU CRAWLING *******")
         print(f" - RESTAURANTS({today}) : {len(restaurants)}")
-        for restaurant_id in tqdm(restaurants): 
+        for restaurant_id in tqdm(restaurants[s: e]): 
             cnt += self.menu_information(restaurant_id, MENU)
             self.preprocess_menu()
-        print(f"##### {cnt} menus updated {today}. ######")
+        print(f"****** {cnt} menus updated {today}. ******")
     
 
     def crawl_review(self, sdate):
@@ -387,17 +385,17 @@ class UpdateMealgen():
         for restaurant_id in tqdm(restaurants):       
             cnt += self.reviews(restaurant_id, REV, yesterday = sdate)
             self.preprocess_rev()
-        print(f"##### {cnt} reviews updated {sdate} ~ {today}. ######")
+        print(f"****** {cnt} reviews updated {sdate} ~ {today}. ******")
 
 
 
 if __name__ == "__main__":
-    server = UpdateMealgen(file = "../connection.txt")
+    server = UpdateCrawling(file = "../connection.txt")
     server.controller._connection_info()
 
     # daily crawling
-    server.crawl_restaurant()
+    # server.crawl_restaurant()
     # server.crawl_menu()
-    # server.crawl_review(yesterday)
+    server.crawl_review(yesterday)
 # 
     server.controller.curs.close()
