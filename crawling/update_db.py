@@ -80,8 +80,6 @@ class UpdateCrawling():
                 json_data = requests.get(url, params = params, headers = API_header).json()
                 if len(json_data['restaurants']) == 0: break
                 
-#                 j = 0
-                # while (j < len(json_data['restaurants'])):
                 for j in range(len(json_data['restaurants'])):
                     res = json_data['restaurants'][j]
 
@@ -143,22 +141,14 @@ class UpdateCrawling():
                     if restaurant['franchise_yn']:
                         restaurant['franchise_name'] = res['franchise_name']
                         restaurant['franchise_id'] = res['franchise_id']
-                    
-                    # if restaurant['sido'] in ['요기요시', 'None']:
-                        # j += 1
-                        # continue
 
                     insert(self.controller, table_name = "restaurant_info", line = restaurant)
                     self.controller.conn.commit()
                     # 이상한거 update - 요기요시, 요기요구, None 64-11
 
-
                     RESTAURANTS.append(restaurant)
                     json.dump(RESTAURANTS, open(f'./restaurant_info_{today}.json', "w"), ensure_ascii=False, indent='\t')
-#                     j += 1
                 p += 1
-#             i += 1 
-        # driver.close()
         return len(RESTAURANTS)
 
 
@@ -248,9 +238,17 @@ class UpdateCrawling():
 
 
     def reviews(self, restaurant_id, REVIEWS, yesterday = yesterday):
-        response = requests.get(f"https://www.yogiyo.co.kr/api/v1/reviews/{restaurant_id}/").json()
-        for r in range(len(response)):
+        while True:
+            try:
+                response = requests.get(f"https://www.yogiyo.co.kr/api/v1/reviews/{restaurant_id}/").json()
+                break
+            except:
+                time.sleep(1.5)
+        r = 0
+        while (r < len(response)):
+        # for r in range(len(response)):
             rev = response[r]
+            
             # 빈 메뉴 선택 생략
             if rev['menu_summary'] == "":
                 r += 1
@@ -277,7 +275,8 @@ class UpdateCrawling():
                 m_id = -1
             
             # yesterday (변경가능) ~ today까지
-            if (rev['time'] >= yesterday) and (rev['time'] < today):
+            # if (rev['time'] >= yesterday) and (rev['time'] < today):
+            if (rev['time'] < today):
                 review = {
                           'written_time' : rev['time'],
                           'nickname' : rev['nickname'],
@@ -293,9 +292,6 @@ class UpdateCrawling():
                           'like_dislike' : int(bool(rev['rating'] >= 2.5)),
                           'updated_at' : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                           }
-             
-                # if review['like_dislike'] == 0:
-                    # review['like_dislike'] = 1
         
                 REVIEWS.append(review)
                 json.dump(REVIEWS, open(f'./reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t')
@@ -305,6 +301,7 @@ class UpdateCrawling():
             else: 
                 r += 1
                 break
+
         return len(REVIEWS)
 
 
@@ -359,9 +356,9 @@ class UpdateCrawling():
 
 
     def get_all_restaurant_ids(self):
-        q = "select restaurant_id from restaurant_info;"
+        q = "select distinct restaurant_id from restaurant_info;"
         self.controller.curs.execute(q)
-        return list(zip(*self.controller.curs.fetchall()))[0]
+        return list(list(zip(*self.controller.curs.fetchall()))[0])
 
 
     def crawl_menu(self, s = None, e = None):
