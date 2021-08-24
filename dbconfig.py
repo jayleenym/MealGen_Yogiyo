@@ -10,6 +10,7 @@ from controller import MysqlController
 import os
 import sys
 import numpy as np
+import datetime
 
 global restaurant_info
 global menu_info
@@ -89,7 +90,7 @@ CREATE TABLE user_predict
     _id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시',
-    user_id INT NOT NULL COMMENT '유저닉네임',
+    user_id INT NOT NULL COMMENT '유저 아이디',
     menu_id INT NOT NULL COMMENT '메뉴 고유 번호(yogiyo)(FK)',
     FOREIGN KEY (menu_id)
     REFERENCES menu_info(menu_id) ON UPDATE CASCADE,
@@ -106,8 +107,13 @@ COMMENT '사용자 예상점수'
 user_comp = """
 CREATE TABLE user_comp(
     _id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
-    
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시',
+    user_id INT NOT NULL COMMENT '유저 고유 번호',
+    target_user_id INT NOT NULL COMMENT '유사도 타켓 유저 번호',
+    expect_rate INT NOT NULL COMMENT '궁합점수 0% ~ 100%'
 )
+COMMENT '사용자간 유사도 점수'
 """
 
 def table_creation(controller, tformat):
@@ -119,12 +125,23 @@ def table_creation(controller, tformat):
         print(e)
 
 # temp function(insertion)
-def insert(controller, table_name : str = None, line : dict = None):
+def Insert(controller, table_name : str = None, line : dict = None):
     columns = ','.join(line.keys())
     placeholders = ','.join(['%s']*len(line))
     sql_command = """INSERT INTO %s(%s) VALUES(%s)"""%(table_name, columns, placeholders)
     controller.curs.execute(sql_command, tuple(str(val) for val in line.values()))
-    # need controller.commit() after executing all lines
+    controller.conn.commit()
+
+def Upsert(controller, table_name : str = None, line : dict = None):
+    columns = ",".join(line.keys())
+    placeholders = ",".join(['%s']*len(line))
+    sql_command = f"""INSERT INTO {table_name}
+                    ({columns}, updated_at) 
+                    VALUES({placeholders}, '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+                    ON DUPLICATE KEY UPDATE {list(line.keys())[-1]} = '{list(line.values())[-1]}', updated_at = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}';
+                    """
+    controller.curs.execute(sql_command, tuple(str(val) for val in line.values()))
+    controller.conn.commit()
 
 def reduce_mem_usage(props):
     start_mem_usg = props.memory_usage().sum() / 1024**2 
@@ -203,6 +220,7 @@ if __name__=="__main__":
     # table_creation(cont, tformat = menu_info)
     # table_creation(cont, tformat=reviews)
 
-    table_creation(cont, tformat=user_predict)
+    # table_creation(cont, tformat=user_predict)
+    # table_creation(cont, tformat=user_comp)
 
     cont.curs.close()

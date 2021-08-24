@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 # db management libraries
 import pymysql
-from dbconfig import insert, reduce_mem_usage
+from dbconfig import Insert, Upsert, reduce_mem_usage
 from controller import MysqlController
 
 # similarity, prediction
@@ -84,8 +84,9 @@ class UpdateRecommend():
         rate_list = np.array(rate_list)
         pred_res_list = np.c_[pred_res_list, rate_list]
         # [user_id, menu_id, rate]를 df로 변환
-        recomm_df = pd.DataFrame(pred_res_list, columns = ['user_id', 'menu_id', 'like'])
+        recomm_df = pd.DataFrame(pred_res_list, columns = ['user_id', 'menu_id', 'predict'])
         return recomm_df
+
 
     def _user_SVD(self):
         df, menu_dict = self.get_dataframe()
@@ -104,7 +105,7 @@ class UpdateRecommend():
         #rmse로 측정
         print(accuracy.rmse(pred))
 
-        recomm_df = pd.DataFrame(columns = ['user_id', 'menu_id', 'like'])
+        recomm_df = pd.DataFrame(columns = ['user_id', 'menu_id', 'predict'])
         for uid in tqdm(df['user_id'].unique()):
             pred_res_list = self.make_predict_list(df, uid)
             temp = self.make_recommendation(svd, uid, pred_res_list)
@@ -112,7 +113,6 @@ class UpdateRecommend():
 
         # 만들어뒀던 menu-restaurant dictionary를 dataframe에 추가
         recomm_df['restaurant_id'] = recomm_df['menu_id'].apply(lambda x: menu_dict[x])
-        recomm_df = recomm_df.reindex(columns = ['user_id', 'menu_id', 'restaurant_id', 'like'])
         # 용량 줄이기
         recomm_df = reduce_mem_usage(recomm_df)
         return recomm_df
@@ -123,25 +123,35 @@ class UpdateRecommend():
         df = self._user_cosine()
         # 한 줄씩 upsert
         for i in tqdm(range(len(df))):
-            q = f"""
-            INSERT INTO user_comp (user, target_user, expect_rate, updated_at)
-            VALUES ({df.u_id}, {df.target_u_id}, {df.expect_rate}, {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
-            ON DUPLICATE KEY UPDATE expect_rate = '{df.expect_rate}', updated_at = {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")};
-            """
-            self.controller.curs.execute(q)
-            self.controller.conn.commit()
+            Upsert(self.controller, table_name = 'user_comp', line = dict(df.iloc[i]))
+        df.to_csv(f"./update_comp_{today}.csv", index = False)
         del df
 
 
     def update_recommend(self):
         df = self._user_SVD()
+        # menu_id == -1 제외
+        df = df.drop(df[df.menu_id == -1].index)
+
         m_q = "SELECT DISTINCT menu_id, name FROM menu_info;"
         self.controller.curs.execute(m_q)
         menu = dict(self.controller.curs.fetchall())
         r_q = "SELECT DISTINCT restaurant_id, name FROM restaurant_info;"
         self.controller.curs.execute(r_q)
         res = dict(self.controller.curs.fetchall())
+        
         # 메뉴 이름, 식당 이름까지 추가해서 update
+        df['menu'] = df['menu_id'].apply(lambda x: menu[x])
+        df['restaurant'] = df['restaurant_id'].apply(lambda x: res[x])
+        # 순서 정렬
+        df = df.reindex(columns = ['user_id', 'menu_id', 'menu', 'restaurant_id', 'restaurant', 'predict'])
+        df = reduce_mem_usage(df)
+        for i in tqdm(range(len(df))):
+            Upsert(self.controller, table_name='user_predict', line = dict(df.iloc[i]))
+        
+        df.to_csv(f"./update_predict_{today}.csv", index = False)
+        del df
+        
 
 
 
@@ -152,7 +162,7 @@ if __name__ == '__main__':
     user.controller._connection_info()
 
     # daily update
-    user.update_compatibility()
+    # user.update_compatibility()
     user.update_recommend()
 
     user.controller.curs.close()

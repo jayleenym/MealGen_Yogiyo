@@ -20,7 +20,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 # db management libraries
 import pymysql
-from dbconfig import insert
+from dbconfig import Insert
 from controller import MysqlController
 
 
@@ -142,8 +142,8 @@ class UpdateCrawling():
                         restaurant['franchise_name'] = res['franchise_name']
                         restaurant['franchise_id'] = res['franchise_id']
 
-                    insert(self.controller, table_name = "restaurant_info", line = restaurant)
-                    self.controller.conn.commit()
+                    Insert(self.controller, table_name = "restaurant_info", line = restaurant)
+                   
                     # 이상한거 update - 요기요시, 요기요구, None 64-11
 
                     RESTAURANTS.append(restaurant)
@@ -218,8 +218,8 @@ class UpdateCrawling():
                     "description": m['description'],
                     "price": m['price'],
                 }
-                insert(self.controller, table_name = "menu_info", line = _menu)
-                self.controller.conn.commit()
+                Insert(self.controller, table_name = "menu_info", line = _menu)
+                
 
                 MENUS.append(_menu)
         json.dump(MENUS, open(f'./menu_info_{today}.json', "w", encoding = "utf-8"), ensure_ascii=False, indent='\t')
@@ -295,8 +295,8 @@ class UpdateCrawling():
         
                 REVIEWS.append(review)
                 json.dump(REVIEWS, open(f'./reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t')
-                insert(self.controller, table_name = "reviews", line = review)
-                self.controller.conn.commit()
+                Insert(self.controller, table_name = "reviews", line = review)
+             
                 r += 1
             else: 
                 r += 1
@@ -391,8 +391,8 @@ if __name__ == "__main__":
     server.controller._connection_info()
 
     # daily crawling
-    # server.crawl_restaurant()
+    server.crawl_restaurant()
     # server.crawl_menu()
-    server.crawl_review(yesterday)
+    # server.crawl_review(yesterday)
 # 
     server.controller.curs.close()
