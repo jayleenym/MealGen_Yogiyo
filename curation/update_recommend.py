@@ -5,6 +5,7 @@ import time
 import pymysql
 import numpy as np
 import pandas as pd
+from scipy.sparse import data
 from tqdm import tqdm
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
@@ -41,12 +42,9 @@ class UpdateRecommend():
         return DF, MENU
 
     # 유저간 코사인 유사도 구하기
-    def _user_cosine(self):
-        df, _ = self.get_dataframe()
-        del _
+    def _user_cosine(self, df, start, end):
         # 한꺼번에 pivot하면 용량 때문에 종료됨
-        # for i in range(0, len(df), )
-        rated_df = df.pivot(columns = 'menu_id', index = 'user_id', values = 'like_dislike')
+        rated_df = df[start:end].pivot(columns = 'menu_id', index = 'user_id', values = 'like_dislike')
         del df
         rated_df = rated_df.fillna(-1) # 평가 안된 항목 모두 '싫어요' 표시됨 방지
         # 용량 줄이기
@@ -55,9 +53,9 @@ class UpdateRecommend():
         cos_sim = pd.DataFrame(cosine_similarity(rated_df), index = rated_df.index, columns= rated_df.index)
         compat_df = pd.DataFrame(cos_sim.unstack())
         del cos_sim
-        compat_df.index.names = ['u_id', 'target_u_id']
+        compat_df.index.names = ['user_id', 'target_user_id']
         compat_df = compat_df.reset_index()
-        compat_df.columns = ['u_id', 'target_u_id', 'expect_rate']
+        compat_df.columns = ['user_id', 'target_user_id', 'expect_rate']
         # 용량 줄이기
         compat_df = reduce_mem_usage(compat_df)
         # User간 궁합점수가 0% ~ 100%로 나오기 때문에 이에 맞게 변환
@@ -120,12 +118,15 @@ class UpdateRecommend():
 
     # db update
     def update_compatibility(self):
-        df = self._user_cosine()
-        # 한 줄씩 upsert
-        for i in tqdm(range(len(df))):
-            Upsert(self.controller, table_name = 'user_comp', line = dict(df.iloc[i]))
-        df.to_csv(f"./update_comp_{today}.csv", index = False)
-        del df
+        data, _ = self.get_dataframe()
+        del _
+        for i in tqdm(range(0, len(data), 10000)):
+            cos = self._user_cosine(data, i, i+10000)
+            # 한 줄씩 upsert
+            for i in tqdm(range(len(cos))):
+                Upsert(self.controller, table_name = 'user_comp', line = dict(cos.iloc[i]))
+            cos.to_csv(f"./update_comp_{today}_{i}.csv", index = False)
+            del cos
 
 
     def update_recommend(self):
@@ -162,7 +163,7 @@ if __name__ == '__main__':
     user.controller._connection_info()
 
     # daily update
-    # user.update_compatibility()
-    user.update_recommend()
+    user.update_compatibility()
+    # user.update_recommend()
 
     user.controller.curs.close()
