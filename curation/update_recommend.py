@@ -21,7 +21,7 @@ from surprise import SVD
 from surprise import accuracy
 from surprise.model_selection import train_test_split
 
-pd.set_option('display.float_format', '{:.2f}'.format)
+# pd.set_option('display.float_format', '{:.2f}'.format)
 
 class UpdateRecommend():
     def __init__(self, file = None):

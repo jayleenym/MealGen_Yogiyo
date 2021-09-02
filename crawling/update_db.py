@@ -43,8 +43,8 @@ options = webdriver.ChromeOptions()
 options.add_argument("headless")
 
 # Path
-chromedriver_path = './crawling/chromedriver'
-address_path = './address'
+chromedriver_path = './chromedriver'
+address_path = '../address'
 
 
 class UpdateCrawling():
