@@ -56,7 +56,7 @@ class UpdateCrawling():
             connect_info = ("localhost", 3306, _id, _pw, _db)
         else:
             with open(os.path.join(sys.path[0], file), "r") as f:
-                connect_info = f.read().split(",")
+                connect_info = list(map(lambda x: x.strip(), f.read().split(",")))
         self.controller = MysqlController(*connect_info)
         
 
