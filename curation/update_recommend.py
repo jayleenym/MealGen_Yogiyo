@@ -2,7 +2,6 @@ import datetime
 import math
 import os, sys
 import time
-import pymysql
 import numpy as np
 import pandas as pd
 from scipy.sparse import data
@@ -22,6 +21,7 @@ from surprise import accuracy
 from surprise.model_selection import train_test_split
 
 # pd.set_option('display.float_format', '{:.2f}'.format)
+today = datetime.date.today().isoformat()
 
 class UpdateRecommend():
     def __init__(self, file = None):
@@ -32,7 +32,7 @@ class UpdateRecommend():
             connect_info = ("localhost", 3306, _id, _pw, _db)
         else:
             with open(os.path.join(sys.path[0], file), "r") as f:
-                connect_info = f.read().split(",")
+                connect_info = list(map(lambda x: x.strip(), f.read().split(",")))
         self.controller = MysqlController(*connect_info)
 
     def get_dataframe(self):

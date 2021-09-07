@@ -9,7 +9,8 @@ class MysqlController:
         self.curs = self.conn.cursor()
 
     def _connection_info(self):
-        print("** CONNECTION INFORMATION **")
-        print(f"  host : {self.host}")
-        print(f"  port : {self.port}")
-        print(f"  db_name : {self.db_name}")
+        print("*** CONNECTION INFORMATION ***")
+        print(f"*  host : {self.host}")
+        print(f"*  port : {self.port}")
+        print(f"*  db_name : {self.db_name}")
+        print('*'*30)

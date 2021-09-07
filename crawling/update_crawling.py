@@ -279,8 +279,8 @@ class UpdateCrawling():
             if (rev['time'] < today):
                 review = {
                           'written_time' : rev['time'],
-                          'nickname' : rev['nickname'],
-                          'user_id' : rev['id'],
+                          'nickname' : rev['nickname'].replace("'", "!"), # ' 있으면 오류
+                          'review_id' : rev['id'],
                           'restaurant_id' : restaurant_id,
                           'menu' : rev['menu_summary'].replace("'", ""),
                           'menu_id' : m_id, # default -1
@@ -296,7 +296,6 @@ class UpdateCrawling():
                 REVIEWS.append(review)
                 json.dump(REVIEWS, open(f'./reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t')
                 Insert(self.controller, table_name = "reviews", line = review)
-             
                 r += 1
             else: 
                 r += 1

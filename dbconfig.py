@@ -64,12 +64,11 @@ COMMENT '메뉴 정보(yogiyo)';
 reviews = """
 CREATE TABLE reviews
 (
-    _id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+    review_id INT NOT NULL PRIMARY KEY COMMENT '리뷰 고유 번호(PK)',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시',
     written_time DATETIME NOT NULL COMMENT '작성일시',
     nickname VARCHAR(50) COMMENT '유저닉네임',
-    user_id INT NOT NULL COMMENT '유저 id(yogiyo)',
     restaurant_id INT NOT NULL COMMENT '식당 id(FK)',
     FOREIGN KEY (restaurant_id) 
     REFERENCES restaurant_info(restaurant_id) ON UPDATE CASCADE,
@@ -109,18 +108,30 @@ CREATE TABLE user_comp(
     _id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시',
-    user_id INT NOT NULL COMMENT '유저 고유 번호',
+    user_id INT NOT NULL COMMENT '유저 id',
     target_user_id INT NOT NULL COMMENT '유사도 타켓 유저 번호',
     expect_rate INT NOT NULL COMMENT '궁합점수 0% ~ 100%'
 )
 COMMENT '사용자간 유사도 점수'
 """
 
+user_info = """
+CREATE TABLE user_info(
+    user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '유저id',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시', 
+    user_name VARCHAR(50) UNIQUE COMMENT '유저 이름',
+    sido VARCHAR(50) COMMENT '시도 구분',
+    sigungu VARCHAR(50) COMMENT '시군구 구분'
+)
+COMMENT '사용자 정보'    
+"""
+
 def table_creation(controller, tformat):
     try:
         controller.curs.execute(tformat)
         controller.conn.commit()
-        print("DONE")
+        print(f"TABLE CREATED.")
     except Exception as e:
         print(e)
 
@@ -132,16 +143,21 @@ def Insert(controller, table_name : str = None, line : dict = None):
     controller.curs.execute(sql_command, tuple(str(val) for val in line.values()))
     controller.conn.commit()
 
-def Upsert(controller, table_name : str = None, line : dict = None):
+def Upsert(controller, table_name : str = None, line : dict = None, update : str = None):
     columns = ",".join(line.keys())
     placeholders = ",".join(['%s']*len(line))
     sql_command = f"""INSERT INTO {table_name}
                     ({columns}, updated_at) 
                     VALUES({placeholders}, '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-                    ON DUPLICATE KEY UPDATE {list(line.keys())[-1]} = '{list(line.values())[-1]}', updated_at = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}';
+                    ON DUPLICATE KEY UPDATE {update} = '{line[update]}', updated_at = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}';
                     """
-    controller.curs.execute(sql_command, tuple(str(val) for val in line.values()))
-    controller.conn.commit()
+    try:
+        controller.curs.execute(sql_command, tuple(str(val) for val in line.values()))
+        controller.conn.commit()
+    except Exception as e:
+        print(e)
+        print(sql_command)
+
 
 def reduce_mem_usage(props):
     start_mem_usg = props.memory_usage().sum() / 1024**2 
@@ -216,11 +232,12 @@ if __name__=="__main__":
     cont = MysqlController(*connect_info)
     cont._connection_info()
 
-    # table_creation(cont, tformat=restaurant_info)
+    # table_creation(cont, tformat = restaurant_info)
     # table_creation(cont, tformat = menu_info)
-    # table_creation(cont, tformat=reviews)
+    # table_creation(cont, tformat = reviews)
 
-    # table_creation(cont, tformat=user_predict)
-    # table_creation(cont, tformat=user_comp)
+    # table_creation(cont, tformat = user_predict)
+    # table_creation(cont, tformat = user_comp)
+    table_creation(cont, tformat= user_info)
 
     cont.curs.close()
