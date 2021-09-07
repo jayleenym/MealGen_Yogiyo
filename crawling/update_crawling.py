@@ -294,7 +294,7 @@ class UpdateCrawling():
                           }
         
                 REVIEWS.append(review)
-                json.dump(REVIEWS, open(f'./reviews_{yesterday}.json', 'w'), ensure_ascii = False, indent = '\t')
+                json.dump(REVIEWS, open(f'./reviews_{yesterday[6:]}_{today[6:]}.json', 'w'), ensure_ascii = False, indent = '\t')
                 Insert(self.controller, table_name = "reviews", line = review)
                 r += 1
             else: 
