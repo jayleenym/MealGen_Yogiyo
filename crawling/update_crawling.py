@@ -254,7 +254,7 @@ class UpdateCrawling():
                 r += 1
                 continue
 
-            q = f"SELECT count(*) FROM reviews WHERE user_id = {rev['id']} AND written_time = '{rev['time']}';"
+            q = f"SELECT count(*) FROM reviews WHERE review_id = {rev['id']} AND written_time = '{rev['time']}';"
             self.controller.curs.execute(q)
             result = self.controller.curs.fetchone()
             if result[0] > 0: # 중복 제거
@@ -294,7 +294,7 @@ class UpdateCrawling():
                           }
         
                 REVIEWS.append(review)
-                json.dump(REVIEWS, open(f'./reviews_{yesterday[6:]}_{today[6:]}.json', 'w'), ensure_ascii = False, indent = '\t')
+                json.dump(REVIEWS, open(f'./reviews_{yesterday[5:]}_{today[5:]}.json', 'w'), ensure_ascii = False, indent = '\t')
                 Insert(self.controller, table_name = "reviews", line = review)
                 r += 1
             else: 
