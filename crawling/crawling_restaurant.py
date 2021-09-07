@@ -1,4 +1,4 @@
-from update_db import *
+from update_crawling import *
 
 server = UpdateCrawling(file = "../connection.txt")
 server.controller._connection_info()

@@ -1,7 +1,7 @@
-from update_db import *
+from update_crawling import *
 
 server = UpdateCrawling(file = "../connection.txt")
 server.controller._connection_info()
 
 # daily crawling
-server.crawl_review(input("시작 날짜('0000-00-00'): "))
+server.crawl_review('2021-01-01')
