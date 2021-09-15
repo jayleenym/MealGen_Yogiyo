@@ -120,12 +120,30 @@ CREATE TABLE user_info(
     user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '유저id',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시', 
-    user_name VARCHAR(50) UNIQUE COMMENT '유저 이름',
+    user_name VARCHAR(50) COMMENT '유저 이름',
     sido VARCHAR(50) COMMENT '시도 구분',
     sigungu VARCHAR(50) COMMENT '시군구 구분'
 )
 COMMENT '사용자 정보'    
 """
+
+# 서울 메뉴들
+seoul_menu = """
+CREATE TABLE seoul_menu(
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시',
+    menu_id INT NOT NULL PRIMARY KEY COMMENT '메뉴id',
+    restaurant_id INT NOT NULL COMMENT '식당 id(FK)',
+    FOREIGN KEY (restaurant_id)
+    REFERENCES restaurant_info(restaurant_id) ON UPDATE CASCADE,
+    name VARCHAR(255) NOT NULL COMMENT '메뉴이름',
+    price INT COMMENT '가격',
+    std_mn VARCHAR(255) COMMENT '표준메뉴MT(FK)',
+    std_mn_code VARCHAR(50) COMMENT '표준메뉴코드MNCODE(FK)'
+)
+COMMENT '서울 메뉴 표준화'
+"""
+
 
 def table_creation(controller, tformat):
     try:
@@ -146,8 +164,7 @@ def Insert(controller, table_name : str = None, line : dict = None):
 def Upsert(controller, table_name : str = None, line : dict = None, update : str = None):
     columns = ",".join(line.keys())
     placeholders = ",".join(['%s']*len(line))
-    sql_command = f"""INSERT INTO {table_name}
-                    ({columns}, updated_at) 
+    sql_command = f"""INSERT INTO {table_name}({columns}, updated_at) 
                     VALUES({placeholders}, '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
                     ON DUPLICATE KEY UPDATE {update} = '{line[update]}', updated_at = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}';
                     """
@@ -238,6 +255,8 @@ if __name__=="__main__":
 
     # table_creation(cont, tformat = user_predict)
     # table_creation(cont, tformat = user_comp)
-    table_creation(cont, tformat= user_info)
+    # table_creation(cont, tformat= user_info)
+
+    table_creation(cont, tformat = seoul_menu)
 
     cont.curs.close()
