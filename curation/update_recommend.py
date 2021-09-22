@@ -36,7 +36,7 @@ class UpdateRecommend():
         self.controller = MysqlController(*connect_info)
 
     def get_dataframe(self):
-        DF = pd.read_sql("SELECT user_id, menu_id, restaurant_id, like_dislike FROM reviews", self.controller.conn)
+        DF = pd.read_sql("SELECT review_id, menu_id, restaurant_id, like_dislike FROM reviews", self.controller.conn)
         DF = reduce_mem_usage(DF)
         MENU = dict(DF[['menu_id', 'restaurant_id']].drop_duplicates().values)
         return DF, MENU
@@ -148,7 +148,7 @@ class UpdateRecommend():
         df = df.reindex(columns = ['user_id', 'menu_id', 'menu', 'restaurant_id', 'restaurant', 'predict'])
         df = reduce_mem_usage(df)
         for i in tqdm(range(len(df))):
-            Upsert(self.controller, table_name='user_predict', line = dict(df.iloc[i]))
+            Upsert(self.controller, table_name='user_predict', line = dict(df.iloc[i]), update='predict')
         
         df.to_csv(f"./update_predict_{today}.csv", index = False)
         del df
@@ -163,7 +163,7 @@ if __name__ == '__main__':
     user.controller._connection_info()
 
     # daily update
-    user.update_compatibility()
-    # user.update_recommend()
+    # user.update_compatibility()
+    user.update_recommend()
 
     user.controller.curs.close()
