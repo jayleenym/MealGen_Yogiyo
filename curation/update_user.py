@@ -10,7 +10,6 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 # db management libraries
 import pymysql
-from dbconfig import Insert, Upsert
 from controller import MysqlController
 
 
