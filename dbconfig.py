@@ -153,27 +153,7 @@ def table_creation(controller, tformat):
     except Exception as e:
         print(e)
 
-# temp function(insertion)
-def Insert(controller, table_name : str = None, line : dict = None):
-    columns = ','.join(line.keys())
-    placeholders = ','.join(['%s']*len(line))
-    sql_command = """INSERT INTO %s(%s) VALUES(%s)"""%(table_name, columns, placeholders)
-    controller.curs.execute(sql_command, tuple(str(val) for val in line.values()))
-    controller.conn.commit()
 
-def Upsert(controller, table_name : str = None, line : dict = None, update : str = None):
-    columns = ",".join(line.keys())
-    placeholders = ",".join(['%s']*len(line))
-    sql_command = f"""INSERT INTO {table_name}({columns}, updated_at) 
-                    VALUES({placeholders}, '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-                    ON DUPLICATE KEY UPDATE {update} = '{line[update]}', updated_at = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}';
-                    """
-    try:
-        controller.curs.execute(sql_command, tuple(str(val) for val in line.values()))
-        controller.conn.commit()
-    except Exception as e:
-        print(e)
-        print(sql_command)
 
 
 def reduce_mem_usage(props):
