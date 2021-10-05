@@ -116,8 +116,8 @@ COMMENT '사용자간 유사도 점수'
 """
 
 user_info = """
-CREATE TABLE user_info(
-    user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '유저id',
+CREATE TABLE user (
+    user_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '유저id',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시', 
     user_name VARCHAR(50) COMMENT '유저 이름',
@@ -235,8 +235,8 @@ if __name__=="__main__":
 
     # table_creation(cont, tformat = user_predict)
     # table_creation(cont, tformat = user_comp)
-    # table_creation(cont, tformat= user_info)
+    table_creation(cont, tformat= user_info)
 
-    table_creation(cont, tformat = seoul_menu)
+    # table_creation(cont, tformat = seoul_menu)
 
     cont.curs.close()
