@@ -37,17 +37,3 @@ class MysqlController:
         except Exception as e:
             print(e)
             print(sql_command)
-
-    # def update(self, table_name : str = None, col : dict = None, where : dict = None):
-    #     sql_command = f"""
-    #     UPDATE {table_name}
-    #     SET {col.keys()[0]} = {value}, 
-    #         updated_at = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
-    #     WHERE {}
-    #     """
-    #     try:
-    #         self.curs.execute(sql_command, tuple(str(val) for val in line.values()))
-    #         self.conn.commit()
-    #     except Exception as e:
-    #         print(e)
-    #         print(sql_command)
