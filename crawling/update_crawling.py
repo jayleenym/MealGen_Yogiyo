@@ -20,7 +20,6 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 # db management libraries
 import pymysql
-from dbconfig import Insert
 from controller import MysqlController
 
 
@@ -44,7 +43,7 @@ options.add_argument("headless")
 
 # Path
 chromedriver_path = './chromedriver'
-address_path = '../address'
+address_path = './address'
 
 
 class UpdateCrawling():
@@ -61,7 +60,9 @@ class UpdateCrawling():
         
 
     def restaurant_information(self, file, driver):
-        if file.endswith('csv'): city = pd.read_csv(f"{address_path}/{file}")
+        if file.endswith('csv'): 
+            city = pd.read_csv(f"{address_path}/{file}")
+        else: return 0
         RESTAURANTS = []
 
         for i in range(len(city)):
@@ -89,10 +90,10 @@ class UpdateCrawling():
                     
                     # review 수 업데이트
                     if result[0] > 0:
-                        # q = f"UPDATE restaurant_info SET review_count = {res['review_count']} \
-                            # WHERE restaurant_id = {res['id']} AND NOT review_count = {res['review_count']};"
-                        # self.controller.curs.execute(q)
-                        # self.controller.conn.commit()
+                        q = f"UPDATE restaurant_info SET review_count = {res['review_count']} \
+                            WHERE restaurant_id = {res['id']} AND NOT review_count = {res['review_count']};"
+                        self.controller.curs.execute(q)
+                        self.controller.conn.commit()
                         j += 1
                         continue
 
@@ -142,7 +143,7 @@ class UpdateCrawling():
                         restaurant['franchise_name'] = res['franchise_name']
                         restaurant['franchise_id'] = res['franchise_id']
 
-                    Insert(self.controller, table_name = "restaurant_info", line = restaurant)
+                    self.controller.insert(table_name = "restaurant_info", line = restaurant)
                    
                     # 이상한거 update - 요기요시, 요기요구, None 64-11
 
@@ -218,7 +219,7 @@ class UpdateCrawling():
                     "description": m['description'],
                     "price": m['price'],
                 }
-                Insert(self.controller, table_name = "menu_info", line = _menu)
+                self.controller.insert(self.controller, table_name = "menu_info", line = _menu)
                 
 
                 MENUS.append(_menu)
@@ -295,7 +296,7 @@ class UpdateCrawling():
         
                 REVIEWS.append(review)
                 json.dump(REVIEWS, open(f'./reviews_{yesterday[5:]}_{today[5:]}.json', 'w'), ensure_ascii = False, indent = '\t')
-                Insert(self.controller, table_name = "reviews", line = review)
+                self.controller.insert(self.controller, table_name = "reviews", line = review)
                 r += 1
             else: 
                 r += 1
