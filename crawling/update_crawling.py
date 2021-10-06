@@ -313,7 +313,7 @@ class UpdateCrawling():
         
                 REVIEWS.append(review)
                 # int64 type error
-                json.dump(REVIEWS, open(f'./reviews_{yesterday[5:]}_{today[5:]}.json', 'w'), ensure_ascii = False, indent = '\t')
+                json.dump(REVIEWS, open(f'./reviews_{yesterday}_{today}.json', 'w'), ensure_ascii = False, indent = '\t')
                 self.controller.insert(table_name = "reviews", line = review)
                 r += 1
             else: 
