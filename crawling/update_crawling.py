@@ -273,8 +273,8 @@ class UpdateCrawling():
             # yesterday (변경가능) ~ today까지
             # if (rev['time'] >= yesterday) and (rev['time'] < today):
             if (rev['time'] < today):
-                nickname = rev['nickname'].replace("'", "!")
-                user_name = rtr.sido.iloc[0][:2] + rtr.sigungu.iloc[0] + rev['nickname'].replace("'", "!")
+                nickname = rev['nickname'].replace("'", "!").strip()
+                user_name = rtr.sido.iloc[0][:2].strip() + rtr.sigungu.iloc[0].strip() + nickname
                 # user_id 배정
                 info = pd.read_sql(f'SELECT user_id FROM user_info WHERE user_name = {user_name};', self.controller.conn)
                 if len(info) == 0:
