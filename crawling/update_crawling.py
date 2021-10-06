@@ -219,7 +219,7 @@ class UpdateCrawling():
                     "description": m['description'],
                     "price": m['price'],
                 }
-                self.controller.insert(self.controller, table_name = "menu_info", line = _menu)
+                self.controller.insert(table_name = "menu_info", line = _menu)
                 
 
                 MENUS.append(_menu)
@@ -239,6 +239,9 @@ class UpdateCrawling():
 
 
     def reviews(self, restaurant_id, REVIEWS, yesterday = yesterday):
+        # 리뷰어 이름 재설정
+        rtr = pd.read_sql(f'SELECT sido, sigungu FROM restaurant_info WHERE restaurant_id = {restaurant_id};', self.controller.conn)
+
         while True:
             try:
                 response = requests.get(f"https://www.yogiyo.co.kr/api/v1/reviews/{restaurant_id}/").json()
@@ -262,14 +265,6 @@ class UpdateCrawling():
                 r += 1
                 continue
 
-            # menu_id 배정
-            # m = re.findall('(.*?)/[0-9]+', rev['menu_summary'])[0]
-            # m_q1 = f"SELECT menu_id FROM menu_info WHERE name = '{m}' AND restaurant_id = {restaurant_id};"
-            # self.controller.curs.execute(m_q1)
-            # try:
-                # m_id = self.controller.curs.fetchone()[0]
-            # except:
-                # m_id = -1
             try:
                 m_id = rev['menu_items']['id']
             except:
@@ -278,9 +273,26 @@ class UpdateCrawling():
             # yesterday (변경가능) ~ today까지
             # if (rev['time'] >= yesterday) and (rev['time'] < today):
             if (rev['time'] < today):
+                nickname = rev['nickname'].replace("'", "!")
+                user_name = rtr.sido.iloc[0][:2] + rtr.sigungu.iloc[0] + rev['nickname'].replace("'", "!")
+                # user_id 배정
+                info = pd.read_sql(f'SELECT user_id FROM user_info WHERE user_name = {user_name};', self.controller.conn)
+                if len(info) == 0:
+                    self.controller.insert('user_info', 
+                                            {"user_name": user_name,
+                                             'sido': rtr.sido.iloc[0],
+                                             'sigungu' : rtr.sigungu.iloc[0],
+                                             'updated_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+                    self.controller.conn.commit()
+                    user_id = pd.read_sql('SELECT count(*) FROM user_info;')
+                else:
+                    user_id = info.user_id.iloc[0]
+                
                 review = {
                           'written_time' : rev['time'],
-                          'nickname' : rev['nickname'].replace("'", "!"), # ' 있으면 오류
+                          'nickname' : nickname, # ' 있으면 오류
+                          'user_name' : user_name,
+                          'user_id' : user_id,
                           'review_id' : rev['id'],
                           'restaurant_id' : restaurant_id,
                           'menu' : rev['menu_summary'].replace("'", ""),
@@ -296,7 +308,7 @@ class UpdateCrawling():
         
                 REVIEWS.append(review)
                 json.dump(REVIEWS, open(f'./reviews_{yesterday[5:]}_{today[5:]}.json', 'w'), ensure_ascii = False, indent = '\t')
-                self.controller.insert(self.controller, table_name = "reviews", line = review)
+                self.controller.insert(table_name = "reviews", line = review)
                 r += 1
             else: 
                 r += 1
@@ -348,7 +360,7 @@ class UpdateCrawling():
         cnt = 0
         print("****** INITIATING RESTAURANT CRAWLING *******")
         driver = webdriver.Chrome(executable_path = chromedriver_path)
-        for f in tqdm(os.listdir(address_path)): 
+        for f in tqdm(os.listdir(address_path)[33:]): 
             cnt += self.restaurant_information(f, driver)
             self.preprocess_res()
         driver.close()
