@@ -276,17 +276,22 @@ class UpdateCrawling():
                 nickname = rev['nickname'].replace("'", "!").strip()
                 user_name = rtr.sido.iloc[0][:2].strip() + rtr.sigungu.iloc[0].strip() + nickname
                 # user_id 배정
-                info = pd.read_sql(f'SELECT user_id FROM user_info WHERE user_name = {user_name};', self.controller.conn)
-                if len(info) == 0:
+                iq = f"SELECT user_id FROM user_info WHERE user_name = '{user_name}';"
+                self.controller.curs.execute(iq)
+                info = self.controller.curs.fetchone()[0]
+                if info == 0:
                     self.controller.insert('user_info', 
                                             {"user_name": user_name,
                                              'sido': rtr.sido.iloc[0],
                                              'sigungu' : rtr.sigungu.iloc[0],
                                              'updated_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
                     self.controller.conn.commit()
-                    user_id = pd.read_sql('SELECT count(*) FROM user_info;')
+                    
+                    uq = f"SELECT count(*) FROM user_info;"
+                    self.controller.curs.execute(uq)
+                    user_id = self.controller.curs.fetchone()[0]
                 else:
-                    user_id = info.user_id.iloc[0]
+                    user_id = info
                 
                 review = {
                           'written_time' : rev['time'],
@@ -307,6 +312,7 @@ class UpdateCrawling():
                           }
         
                 REVIEWS.append(review)
+                # int64 type error
                 json.dump(REVIEWS, open(f'./reviews_{yesterday[5:]}_{today[5:]}.json', 'w'), ensure_ascii = False, indent = '\t')
                 self.controller.insert(table_name = "reviews", line = review)
                 r += 1
