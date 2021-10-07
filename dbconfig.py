@@ -144,6 +144,20 @@ CREATE TABLE seoul_menu(
 COMMENT '서울 메뉴 표준화'
 """
 
+# 위치정보DB
+address = """
+CREATE TABLE Address(
+    _id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT '(PK)',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+    updated_at DATETIME NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '업데이트 일시',
+    sido VARCHAR(50) COMMENT '시도명',
+    sigungu VARCHAR(50) COMMENT '시군구명',
+    dong VARCHAR(50) COMMENT '읍면동명',
+    X DECIMAL(17, 10) COMMENT '중심점좌표X', 
+    Y DECIMAL(17, 10) COMMENT '중심점봐표Y'
+)
+COMMENT '기초번호 위치정보 DB'
+"""
 
 def table_creation(controller, tformat):
     try:
@@ -235,8 +249,8 @@ if __name__=="__main__":
 
     # table_creation(cont, tformat = user_predict)
     # table_creation(cont, tformat = user_comp)
-    table_creation(cont, tformat= user_info)
+    # table_creation(cont, tformat = user_info)
 
     # table_creation(cont, tformat = seoul_menu)
-
+    table_creation(cont, tformat = address)
     cont.curs.close()

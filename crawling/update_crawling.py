@@ -29,10 +29,6 @@ API_header = {'x-apisecret': 'fe5183cc3dea12bd0ce299cf110a75a2',
 yesterday = (datetime.date.today() - timedelta(days = 1)).isoformat()
 today = datetime.date.today().isoformat()
 
-txt_headers = ['시군구코드', '기초구간일련번호', '기초번호본번', '기초번호부번', '도로구간일련번호',
-          '시도명', '시군구명', '읍면동코드', '읍면동명', '도로명코드', '도로명', '도로구간시점', '도로구간종점',
-          '중심점좌표_X', '중심점좌표_Y']
-
 review_headers = ['name', 'register_number', 'rating', 'menu_items', 
                 'menu_summary', 'rating_quantity', 'rating_taste', 
                 'rating_delivery', 'is_mine_review','is_mine_like', 'nickname', 'id', 'time']
@@ -42,7 +38,7 @@ options = webdriver.ChromeOptions()
 options.add_argument("headless")
 
 # Path
-chromedriver_path = './chromedriver'
+chromedriver_path = '/Users/yejin/Downloads/chromedriver'
 address_path = './address'
 
 
@@ -59,19 +55,18 @@ class UpdateCrawling():
         self.controller = MysqlController(*connect_info)
         
 
-    def restaurant_information(self, file, driver):
-        if file.endswith('csv'): 
-            city = pd.read_csv(f"{address_path}/{file}")
-        else: return 0
+    def restaurant_information(self, driver):
+        self.controller.curs.execute('SELECT X, Y FROM Address;')
+        city = self.controller.curs.fetchall()
         RESTAURANTS = []
 
-        for i in range(len(city)):
+        for i in tqdm(range(len(city))):
             p = 0
             while(1):
                 params = {
                             'items' : 200,
-                            'lat': city['중심점좌표_Y'][i],
-                            'lng': city['중심점좌표_X'][i],
+                            'lat': city[i][1],
+                            'lng': city[i][0],
                             'order': 'review_count',
                             'page': p
                             }
@@ -90,10 +85,10 @@ class UpdateCrawling():
                     
                     # review 수 업데이트
                     if result[0] > 0:
-                        q = f"UPDATE restaurant_info SET review_count = {res['review_count']} \
-                            WHERE restaurant_id = {res['id']} AND NOT review_count = {res['review_count']};"
-                        self.controller.curs.execute(q)
-                        self.controller.conn.commit()
+                        # q = f"UPDATE restaurant_info SET review_count = {res['review_count']} \
+                        #     WHERE restaurant_id = {res['id']} AND NOT review_count = {res['review_count']};"
+                        # self.controller.curs.execute(q)
+                        # self.controller.conn.commit()
                         j += 1
                         continue
 
@@ -278,8 +273,8 @@ class UpdateCrawling():
                 # user_id 배정
                 iq = f"SELECT user_id FROM user_info WHERE user_name = '{user_name}';"
                 self.controller.curs.execute(iq)
-                info = self.controller.curs.fetchone()[0]
-                if info == 0:
+                info = self.controller.curs.fetchone()
+                if not info:
                     self.controller.insert('user_info', 
                                             {"user_name": user_name,
                                              'sido': rtr.sido.iloc[0],
@@ -289,7 +284,7 @@ class UpdateCrawling():
                     
                     uq = f"SELECT count(*) FROM user_info;"
                     self.controller.curs.execute(uq)
-                    user_id = self.controller.curs.fetchone()[0]
+                    user_id = self.controller.curs.fetchone()[0][0]
                 else:
                     user_id = info
                 
@@ -363,12 +358,10 @@ class UpdateCrawling():
 
     # daily update
     def crawl_restaurant(self):
-        cnt = 0
         print("****** INITIATING RESTAURANT CRAWLING *******")
         driver = webdriver.Chrome(executable_path = chromedriver_path)
-        for f in tqdm(os.listdir(address_path)[33:]): 
-            cnt += self.restaurant_information(f, driver)
-            self.preprocess_res()
+        cnt = self.restaurant_information(driver)
+        self.preprocess_res()
         driver.close()
         print(f"****** {cnt} restaurants added {today}. ******")
 
