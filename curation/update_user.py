@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 # db management libraries
 import pymysql
+# from dbconfig import Upsert, Insert
 from controller import MysqlController
 
 
@@ -37,7 +38,10 @@ class UpdateUser():
             if df.iloc[i].sido == '세종특별자치시':
                 df.iloc[i].user_name = '세종'+ df.iloc[i].user_name.strip()
             
-            Upsert(self.controller, table_name='user_info', line=dict(df.iloc[i]), update='user_name')
+            # try:
+                # self.controller.insert(self.controller, table_name='user_info', line=dict(df.iloc[i]))
+            # except: continue
+            
 
     def update_review(self):
         self.controller.curs.execute("SELECT count(*) FROM reviews;")

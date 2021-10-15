@@ -4,3 +4,4 @@ numpy
 tqdm
 sklearn
 surprise
+p7zip
