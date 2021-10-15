@@ -2,49 +2,34 @@
 
 this repository is for crawling restaurant's menu & reviews in yogiyo, and preprocessing data.
 
-<!-- ### TABLE 1: restaurant_info
-- _id (PK)
-- restaurant_id : yogiyo 식당 고유 번호(unique)
-- company_id : 사업자등록번호
-- created_at : 생성 일시
-- updated_at : 업데이트 일시
-- name : 식당호
-- phone : 전화번호
-- address : 주소
-- si : 시도 구분
-- franchise_yn : 프랜차이즈 여부
-- franchise_id : 프랜차이즈 ID
-- delivery_yn : 배달 가능 여부
-- delivery_time : 배달 시간
-- delivery_fee : 배달료
-- loc : 좌표(경도, 위도)
-- avg : 평균 평점
-- review_count : 리뷰수
+## 사용중인 Table
+- Address : 기초번호 위치 정보 DB
+- menu_info, restaurant_info, reviews
+- seoul_menu, STD_MENU: 서울 식당 메뉴 표준화 작업
+- user_info
+- user_comp, user_predict
 
-### TABLE 2: menu_info
-- _id(PK)
-- menu_id : yogiyo 메뉴 고유 번호(unique)
-- created_at : 생성 일시
-- updated_at : 업데이트 일시
-- restaurant_id (FK)
-- name : 메뉴 이름
-- description : 설명
-- price : 가격
-
-
-### TABLE 3: reviews
-- _id(PK)
-- created_at : 작성 일시
-- nickname : 유저 닉네임
-- user_id : yogiyo 유저 번호
-- restaurant_id(FK)
-- menu_id(FK)
-- menu : 주문 내용
-- comment : 리뷰 내용
-- quantity_rating : 양 평점
-- taste_rating : 맛 평점
-- delivery_rating : 배달 평점
-- rating : 평점
-- like_dislike : 2.5이상 1, 미만 0 -->
-
+## 기초번호 위치정보DB
 - 주소 출처: [도로명주소 개발자센터](https://www.juso.go.kr/addrlink/addressBuildDevNew.do?menu=jusuip)
+<!-- - ubuntu 환경에서 파일 다운로드 (202109 기준, 성공여부 모름)
+```bash
+$ wget https://www.juso.go.kr/dn.do?boardId=JUSUIPDATA&regYmd=2021&num=13&fileNo=91714&stdde=202109&fileName=202109_기초번호위치정보DB_전체분.7z&realFileName=JUSUIP_DB_ALL_2109.7z&logging=Y
+``` -->
+
+## Ubuntu Chromedriver 사용
+- chrome 설치
+```
+$ sudo apt-get update
+$ wget https://dl.google.com/linux/directgoogle-chrome-stable_current_amd64.deb
+$ sudo dpkg -i google-chrome-stable_current_amd64.deb
+
+# dpkg 오류
+sudo apt --fix-broken install
+```
+- chromedriver 설치
+```
+$ google-chrome --version # 버전확인
+
+$ wget -N https://chromedriver.storage.googleapis.com/94.0.4606.61/chromedriver_linux64.zip
+$ unzip chromedriver_linux64.zip
+```
