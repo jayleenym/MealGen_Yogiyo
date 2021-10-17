@@ -53,7 +53,7 @@ class UpdateReviews():
                 # user_id 배정
                 iq = f"SELECT user_id FROM user_info WHERE user_name = '{user_name}';"
                 self.controller.curs.execute(iq)
-                info = self.controller.curs.fetchone()[0]
+                info = self.controller.curs.fetchone()
                 if not info:
                     self.controller.insert('user_info', 
                                             {"user_name": user_name,
@@ -66,7 +66,7 @@ class UpdateReviews():
                     self.controller.curs.execute(uq)
                     user_id = self.controller.curs.fetchone()[0]
                 else:
-                    user_id = info
+                    user_id = info[0]
                 # review 파일 만들기
                 review = {
                           'written_time' : rev['time'],
@@ -114,7 +114,7 @@ class UpdateReviews():
         self.controller.curs.execute(q)
         result = self.controller.curs.fetchone()
         if result[0] > 0: 
-            # menu_id update - 다른 방법이 생각이 안남..
+            # menu_id update
             q = "SELECT name, menu_id, restaurant_id FROM menu_info ORDER BY restaurant_id ASC;"
             self.controller.curs.execute(q)
             menus, id, res = [], [], []
@@ -136,6 +136,18 @@ class UpdateReviews():
                 self.controller.conn.commit()
         else: return
 
+    def fill_extra(self, resid):
+        rev_menu = pd.read_sql(f'SELECT menu, review_id FROM reviews WHERE menu_id = -1 AND restaurant_id = {resid};', self.controller.conn)
+        rev_menu.menu = rev_menu.menu.apply(lambda x: re.findall('(.*?)/[0-9]+', x)[0].strip())
+        menu = pd.read_sql(f'SELECT menu_id, name as menu FROM menu_info WHERE restaurant_id = {resid};', self.controller.conn)
+        ids = pd.merge(rev_menu, menu, how = 'left', on = 'menu')
+        ids = ids[ids.menu_id.notnull()]
+
+        tmp = list(map(tuple, ids[['menu_id', 'review_id']].values))
+        self.controller.curs.executemany("UPDATE reviews SET menu_id = %s, updated_at = now() WHERE review_id = %s", tmp)
+        self.controller.conn.commit()
+
+
 
 if __name__ == "__main__":
     server = UpdateReviews(file = "../connection.txt")
@@ -154,4 +166,5 @@ if __name__ == "__main__":
     for restaurant_id in tqdm(restaurants):       
         cnt += server.reviews(restaurant_id, REV, yesterday = sdate)
         server.preprocess_rev()
+        server.fill_extra(restaurant_id)
     print(f"****** {cnt} reviews updated {sdate} ~ {today}. ******")
