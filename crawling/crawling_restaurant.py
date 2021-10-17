@@ -198,6 +198,7 @@ if __name__ == "__main__":
     driver = webdriver.Chrome(executable_path = chromedriver_path, options = options)
     cnt = server.restaurant_information(driver)
     server.preprocessing()
+    server.fill_address()
     driver.close()
     print(f"****** {cnt} restaurants added {today}. ******")
 
