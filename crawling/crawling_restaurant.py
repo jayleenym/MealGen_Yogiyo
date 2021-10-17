@@ -68,7 +68,7 @@ class UpdateRestaurant():
                     
                     # 사업자등록번호 추가                                 
                     regist_num = driver.find_element_by_xpath('//*[@id="info"]/div[4]/p[2]/span').text
-
+                    
                     # 식당 정보 json
                     restaurant = {
                                     'restaurant_id' : res['id'], 
@@ -84,7 +84,8 @@ class UpdateRestaurant():
                                     'categories' : ",".join(res['categories']),
                                     'delivery_yn' : int(bool(res['is_available_delivery'])), 
                                     'delivery_time' : res['estimated_delivery_time'], 
-                                    'delivery_fee' : res['delivery_fee'], 
+                                    # 'delivery_fee' : res['delivery_fee'], 
+                                    'delivery_fee' : res['adjusted_delivery_fee'], # key 이름 바뀜
                                     'lat' : res['lat'],
                                     'lng' : res['lng'], 
                                     'avg' : res['review_avg'], 
@@ -194,7 +195,7 @@ if __name__ == "__main__":
     server.controller._connection_info()
     # 식당 크롤링
     print("****** INITIATING RESTAURANT CRAWLING *******")
-    driver = webdriver.Chrome(executable_path = chromedriver_path, chrome_options = options)
+    driver = webdriver.Chrome(executable_path = chromedriver_path, options = options)
     cnt = server.restaurant_information(driver)
     server.preprocessing()
     driver.close()
