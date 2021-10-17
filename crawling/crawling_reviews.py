@@ -28,7 +28,6 @@ class UpdateReviews():
         while (r < len(response)):
         # for r in range(len(response)):
             rev = response[r]
-            
             # 빈 메뉴 선택 생략
             if rev['menu_summary'] == "":
                 r += 1
@@ -54,7 +53,7 @@ class UpdateReviews():
                 # user_id 배정
                 iq = f"SELECT user_id FROM user_info WHERE user_name = '{user_name}';"
                 self.controller.curs.execute(iq)
-                info = self.controller.curs.fetchone()
+                info = self.controller.curs.fetchone()[0]
                 if not info:
                     self.controller.insert('user_info', 
                                             {"user_name": user_name,
@@ -65,7 +64,7 @@ class UpdateReviews():
                     
                     uq = f"SELECT count(*) FROM user_info;"
                     self.controller.curs.execute(uq)
-                    user_id = self.controller.curs.fetchone()[0][0]
+                    user_id = self.controller.curs.fetchone()[0]
                 else:
                     user_id = info
                 # review 파일 만들기
@@ -83,8 +82,8 @@ class UpdateReviews():
                           'taste' : rev['rating_taste'],
                           'delivery' : rev['rating_delivery'],
                           'rating' : rev['rating'],
-                          'like_dislike' : int(bool(rev['rating'] >= 2.5))#,
-                        #   'updated_at' : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                          'like_dislike' : int(bool(rev['rating'] >= 2.5)),
+                          'updated_at' : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                           }
         
                 REVIEWS.append(review)
