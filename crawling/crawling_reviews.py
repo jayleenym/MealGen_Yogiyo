@@ -58,7 +58,9 @@ class UpdateReviews():
                     self.controller.insert('user_info', 
                                             {"user_name": user_name,
                                              'sido': rtr.sido.iloc[0],
-                                             'sigungu' : rtr.sigungu.iloc[0]}
+                                             'sigungu' : rtr.sigungu.iloc[0],
+                                             'updated_at' : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
+                                            }
                                              )
                     self.controller.conn.commit()
                     
