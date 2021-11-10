@@ -36,15 +36,17 @@ class UpdateRestaurant():
                 
                 for j in range(len(json_data['restaurants'])):
                     res = json_data['restaurants'][j]
-
+                    # print(res.keys())
+                    # print(res['is_deliverable'])
+                    # break
                     q = f"SELECT count(*) FROM restaurant_info WHERE restaurant_id = {res['id']}"
                     self.controller.curs.execute(q)
                     result = self.controller.curs.fetchone()
                     
                     # review 수 업데이트
                     if result[0] > 0:
-                        # q = f"UPDATE restaurant_info SET review_count = {res['review_count']} \
-                        #     WHERE restaurant_id = {res['id']} AND NOT review_count = {res['review_count']};"
+                        # q = f"""UPDATE restaurant_info SET review_count = {res['review_count']},
+                            # WHERE restaurant_id = {res['id']};"""
                         # self.controller.curs.execute(q)
                         # self.controller.conn.commit()
                         j += 1
@@ -82,9 +84,10 @@ class UpdateRestaurant():
                                     'franchise_name' : None,
                                     'franchise_id' : -1, # default None value
                                     'categories' : ",".join(res['categories']),
-                                    'delivery_yn' : int(bool(res['is_available_delivery'])), 
+                                    # 'delivery_yn' : int(bool(res['is_available_delivery'])), 
+                                    'delivery_yn' : int(res['is_deliverable']), # key 이름 바뀜
                                     'delivery_time' : res['estimated_delivery_time'], 
-                                    # 'delivery_fee' : res['delivery_fee'], 
+                                    # 'delivery_fee' : res['delivery_fee'],
                                     'delivery_fee' : res['adjusted_delivery_fee'], # key 이름 바뀜
                                     'lat' : res['lat'],
                                     'lng' : res['lng'], 
@@ -97,7 +100,8 @@ class UpdateRestaurant():
                         restaurant['franchise_name'] = res['franchise_name']
                         restaurant['franchise_id'] = res['franchise_id']
 
-                    self.controller.insert(table_name = "restaurant_info", line = restaurant)
+                    # self.controller.insert(table_name = "restaurant_info", line = restaurant)
+                    self.controller.upsert(table_name='restaurant_info', line = restaurant, update = 'delivery_yn')
                    
                     # 이상한거 update - 요기요시, 요기요구, None 64-11
 

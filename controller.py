@@ -27,9 +27,9 @@ class MysqlController:
     def upsert(self, table_name : str = None, line : dict = None, update : str = None):
         columns = ",".join(line.keys())
         placeholders = ",".join(['%s']*len(line))
-        sql_command = f"""INSERT INTO {table_name}({columns}, updated_at) 
-                        VALUES({placeholders}, '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-                        ON DUPLICATE KEY UPDATE {update} = '{line[update]}', updated_at = '{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}';
+        sql_command = f"""INSERT INTO {table_name}({columns}) 
+                        VALUES({placeholders})
+                        ON DUPLICATE KEY UPDATE {update} = '{line[update]}';
                         """
         try:
             self.curs.execute(sql_command, tuple(str(val) for val in line.values()))
