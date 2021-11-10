@@ -2,7 +2,7 @@
 |column|comment|
 |--|--|
 |_id|auto_increment|
-|restaurant_id|요기요에서 부여한 식당id|
+|restaurant_id|요기요에서 부여한 식당id(FK)|
 |company_id|사업자등록번호|
 |name|식당 이름|
 |categories|요기요에서 부여한 식당 카테고리|
@@ -24,8 +24,26 @@
 |column|comment|
 |--|--|
 |_id|auto_increment|
-|menu_id|요기요에서 부여한 메뉴id|
-|restaurant_id|요기요에서 부여한 식당id|
+|menu_id|요기요에서 부여한 메뉴id(PK)|
+|restaurant_id|요기요에서 부여한 식당id(FK, restaurant_info)|
 |name|요기요에 등록된 메뉴 이름|
 |description|요기요에 등록된 메뉴 설명|
 |price|메뉴 가격|
+<br>
+
+# reviews
+|column|comment|
+|--|--|
+|review_id|요기요에서 부여한 리뷰id(PK)|
+|nickname|요기요 리뷰 작성자 별명|
+|user_name|식당위치 + 작성자 별명으로 새로 부여된 리뷰 작성자 이름(FK, user_info)|
+|user_id|새로 부여된 리뷰 작성자의 번호(FK, user_info)|
+|restaurant_id|요기요에서 부여한 식당id(FK, restaurant_info)|
+|menu|리뷰 작성시 주문한 메뉴 중 첫 번째 메뉴|
+|menu_id|요기요에서 부여한 메뉴id(FK, menu_info), -1은 현재 메뉴 테이블에 없는 메뉴|
+|review|리뷰 내용|
+|quantity|양 평점(2015년~2019년 댓글은 0일 수 있음)|
+|taste|맛 평점|
+|delivery|배달 평점|
+|rating|전체 평점(0점 없음)|
+|like_dislike|전체 평점이 2.5이상이면 1, 미만이면 0|
