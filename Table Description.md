@@ -36,7 +36,7 @@
 |--|--|
 |review_id|요기요에서 부여한 리뷰id(PK)|
 |nickname|요기요 리뷰 작성자 별명|
-|user_name|식당위치+작성장 별명으로 새로 부여된 리뷰 작성자 이름(FK, user_info)|
+|user_name|식당위치 + 작성자 별명으로 새로 부여된 리뷰 작성자 이름(FK, user_info)|
 |user_id|새로 부여된 리뷰 작성자의 번호(FK, user_info)|
 |restaurant_id|요기요에서 부여한 식당id(FK, restaurant_info)|
 |menu|리뷰 작성시 주문한 메뉴 중 첫 번째 메뉴|
