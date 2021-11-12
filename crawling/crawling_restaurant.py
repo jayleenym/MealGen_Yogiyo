@@ -45,10 +45,10 @@ class UpdateRestaurant():
                     
                     # review 수 업데이트
                     if result[0] > 0:
-                        # q = f"""UPDATE restaurant_info SET review_count = {res['review_count']},
-                            # WHERE restaurant_id = {res['id']};"""
-                        # self.controller.curs.execute(q)
-                        # self.controller.conn.commit()
+                        q = f"""UPDATE restaurant_info SET phone = {res['phone']}, review_count = {res['review_count']}
+                            WHERE restaurant_id = {res['id']};"""
+                        self.controller.curs.execute(q)
+                        self.controller.conn.commit()
                         j += 1
                         continue
 
