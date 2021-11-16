@@ -39,11 +39,16 @@ class UpdateRestaurant():
                     # print(res.keys())
                     # print(res['is_deliverable'])
                     # break
+                    
+                    if res['phone'] == "0000000000":
+                        res['phone'] = ' '
+                    
                     q = f"SELECT count(*) FROM restaurant_info WHERE restaurant_id = {res['id']}"
                     self.controller.curs.execute(q)
                     result = self.controller.curs.fetchone()
                     
-                    # review 수 업데이트
+                    
+                    # 업데이트
                     if result[0] > 0:
                         q = f"""UPDATE restaurant_info SET phone = {res['phone']}, review_count = {res['review_count']}
                             WHERE restaurant_id = {res['id']};"""
@@ -114,11 +119,11 @@ class UpdateRestaurant():
     def preprocessing(self):
         self.controller.curs.execute("""
         UPDATE restaurant_info
-        SET phone = NULL WHERE phone = '000000000' or phone = '';""")
+        SET phone = NULL, updated_at = now() WHERE phone = '0000000000' or phone = '';""")
         self.controller.conn.commit()
 
         self.controller.curs.execute("""UPDATE restaurant_info
-        SET delivery_time = NULL WHERE delivery_time = '';""")
+        SET delivery_time = NULL, updated_at = now() WHERE delivery_time = '';""")
         self.controller.conn.commit()
 
         q = '''
@@ -138,7 +143,8 @@ class UpdateRestaurant():
                             WHEN sido = '경북' THEN replace(address, sido, '경상북도')
                             WHEN sido = '경남' THEN replace(address, sido, '경상남도')
                             WHEN sido = '제주' THEN replace(replace(address, sido, '제주특별자치도'), '제주특별자치도시', '제주시')
-                        END)
+                        END),
+            updated_at = now()
         WHERE sido in ('서울', '인천', '경기', '경기동', '세종', '충남','대전', '대전시', 
                     '광주' , '울산' , '부산', '충북', '대구', '대구시', '전남', '경북', 
                     '경남', '제주');
@@ -149,7 +155,8 @@ class UpdateRestaurant():
         q = '''
         UPDATE restaurant_info 
         SET sido = substring_index(address, " ", 1),
-            sigungu = replace(substring_index(address, " ", 2), substring_index(address, " ", 1), "");
+            sigungu = replace(substring_index(address, " ", 2), substring_index(address, " ", 1), ""),
+            updated_at = now();
         '''
         self.controller.curs.execute(q)
         self.controller.conn.commit()
@@ -184,7 +191,7 @@ class UpdateRestaurant():
                         self.controller.conn.commit()
                     except: continue
                         
-                self.preprocess_res()
+                self.preprocessing()
                 driver.close()
                 break
             except:
@@ -200,10 +207,10 @@ if __name__ == "__main__":
     # 식당 크롤링
     print("****** INITIATING RESTAURANT CRAWLING *******")
     driver = webdriver.Chrome(executable_path = chromedriver_path, options = options)
-    cnt = server.restaurant_information(driver)
+    # cnt = server.restaurant_information(driver)
     server.preprocessing()
-    server.fill_address()
+    # server.fill_address()
     driver.close()
-    print(f"****** {cnt} restaurants added {today}. ******")
+    # print(f"****** {cnt} restaurants added {today}. ******")
 
     server.controller.curs.close()
