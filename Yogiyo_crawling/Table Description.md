@@ -1,4 +1,5 @@
-# restaurant_info
+# Yogiyo crawling
+## restaurant_info
 |column|comment|
 |--|--|
 |_id|auto_increment|
@@ -20,7 +21,7 @@
 |review_count|식당 리뷰 수|
 <br>
 
-# menu_info
+## menu_info
 |column|comment|
 |--|--|
 |_id|auto_increment|
@@ -31,7 +32,7 @@
 |price|메뉴 가격|
 <br>
 
-# reviews
+## reviews
 |column|comment|
 |--|--|
 |review_id|요기요에서 부여한 리뷰id(PK)|
