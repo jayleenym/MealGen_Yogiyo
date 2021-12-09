@@ -44,7 +44,7 @@ options.add_argument('--disable-dev-shm-usage')
 chromedriver_path = '/Users/yejin/Downloads/chromedriver'
 driver = webdriver.Chrome(executable_path = chromedriver_path, options = options)
 
-for adr in ADR:
+for adr in tqdm(ADR):
 # adr = ADR[0]
     # 주소지별 사이트 입장
     url = f'https://www.diningcode.com/list.php?query={adr}'
@@ -67,6 +67,10 @@ for adr in ADR:
         driver.switch_to.window(driver.window_handles[0])
         one_url = res.find_element_by_tag_name('a')
         one_id = re.findall('rid=(.*)', one_url.get_attribute('href'))[0]
+        # 중복 체크
+        server.curs.execute(f"SELECT count(*) FROM diningcode_restaurants WHERE diningcode_id = '{one_id}';")
+        if server.curs.fetchone()[0] >= 1: continue
+
         # 클릭해서 열고 활성탭 옮김
         one_url.click()
         driver.switch_to.window(driver.window_handles[1])
@@ -83,6 +87,7 @@ for adr in ADR:
         except:
             one_star = 0.0
 
+
         # 식당정보
         server.insert('diningcode_restaurants', line = {
             'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -96,14 +101,23 @@ for adr in ADR:
             'phone' : driver.find_element_by_css_selector('li.tel').text
             # tag, char은 제외
         })
+        
 
         # 메뉴
         menu = [m.text for m in driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.l-txt.Restaurant_MenuItem') if m.text != '']
         # price = [int(re.sub('[원,]', "", p.text)) if re.sub('[원,]', "", p.text).isalnum() else p.text 
         price = [p.text
                     for p in driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.r-txt.Restaurant_MenuPrice') if p.text != '']
+        
         if len(menu) != 0:
             for i in range(len(menu)):
+                # 중복 체크
+                server.curs.execute(f"""SELECT count(*) 
+                                           FROM diningcode_menu 
+                                           WHERE diningcode_id = '{one_id}'
+                                           AND menu = '{menu[i]}';""")
+                if server.curs.fetchone()[0] >= 1: continue
+                
                 server.insert('diningcode_menu', line = {
                     'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'name': one_name,
@@ -118,7 +132,7 @@ for adr in ADR:
         while True:
             try:
                 driver.find_element_by_css_selector('#div_more_review').click()
-                time.sleep(1)
+                time.sleep(1.2)
             except:
                 break
 
@@ -131,7 +145,16 @@ for adr in ADR:
 
         if len(reviewers) != 0:
             for i in range(len(reviewers)):
+                server.curs.execute(f"""SELECT count(*) 
+                                           FROM diningcode_reviews 
+                                           WHERE diningcode_id = '{one_id}' AND 
+                                                 review = '{review[i]}';""")
+                if server.curs.fetchone()[0] >= 1: continue
                 # 리뷰
+                try:
+                    d = datetime.datetime.strptime(date[i], "%Y년 %m월 %d일") 
+                except:
+                    d = datetime.datetime.strptime(date[i], "2021년 %m월 %d일")
                 server.insert('diningcode_reviews', line = {
                     'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'restaurant_name': driver.find_element_by_css_selector('div.tit-point').text,
@@ -143,7 +166,7 @@ for adr in ADR:
                     # 'point_price' : float(re.findall('가격([0-5][.]?[0-9]?)', point[i])[0]),
                     # 'point_service' : float(re.findall('서비스([0-5][.]?[0-9]?)', point[i])[0]),
                     'review' : review[i],
-                    'date' : datetime.datetime.strptime(date[i], "%Y년 %m월 %d일")
+                    'date' : d
                 })
         
         # 식당 하나 끝
