@@ -73,9 +73,15 @@ for adr in tqdm(ADR):
 
         # 클릭해서 열고 활성탭 옮김
         one_url.click()
+        time.sleep(1)
         driver.switch_to.window(driver.window_handles[1])
-
-        one_name = driver.find_element_by_css_selector('div.tit-point').text
+        while True:
+            try:
+                one_name = driver.find_element_by_css_selector('div.tit-point').text
+                break
+            except:
+                time.sleep(1)
+                driver.refresh()
         
         try:
             one_grade = float(driver.find_element_by_css_selector('div.sns-grade strong').text.replace('점', ""))
@@ -113,9 +119,9 @@ for adr in tqdm(ADR):
             for i in range(len(menu)):
                 # 중복 체크
                 server.curs.execute(f"""SELECT count(*) 
-                                           FROM diningcode_menu 
-                                           WHERE diningcode_id = '{one_id}'
-                                           AND menu = '{menu[i]}';""")
+                                        FROM diningcode_menu 
+                                        WHERE diningcode_id = '{one_id}'
+                                        AND menu = '{menu[i]}';""")
                 if server.curs.fetchone()[0] >= 1: continue
                 
                 server.insert('diningcode_menu', line = {
@@ -146,9 +152,9 @@ for adr in tqdm(ADR):
         if len(reviewers) != 0:
             for i in range(len(reviewers)):
                 server.curs.execute(f"""SELECT count(*) 
-                                           FROM diningcode_reviews 
-                                           WHERE diningcode_id = '{one_id}' AND 
-                                                 review = '{review[i]}';""")
+                                        FROM diningcode_reviews 
+                                        WHERE diningcode_id = '{one_id}' AND 
+                                                review = '{review[i]}';""")
                 if server.curs.fetchone()[0] >= 1: continue
                 # 리뷰
                 try:
@@ -171,6 +177,5 @@ for adr in tqdm(ADR):
         
         # 식당 하나 끝
         driver.close()
-
 # 완전 종료
 driver.quit()
