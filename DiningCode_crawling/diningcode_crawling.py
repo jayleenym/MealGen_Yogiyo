@@ -36,7 +36,7 @@ ADR = [f[0] for f in server.curs.fetchall()]
 
 # 식당 리스트 받아오기
 options = webdriver.ChromeOptions()
-# options.add_argument("--headless")
+options.add_argument("--headless")
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 
@@ -51,13 +51,16 @@ for adr in tqdm(ADR):
     driver.get(url)
 
     # 더보기 다 누르기
+    # 최대 100개
     while True:
         try:
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
             driver.find_element_by_css_selector('#div_list_more').click()
-            time.sleep(1)
+            time.sleep(1.5)
         except:
             break
     
+    time.sleep(0.5)
     # 광고 제거 안됨
     res_list = [res for res in driver.find_elements_by_css_selector('#div_list > li') if type(res.get_property('onmouseenter')) == dict]
     
@@ -68,7 +71,7 @@ for adr in tqdm(ADR):
         one_url = res.find_element_by_tag_name('a')
         one_id = re.findall('rid=(.*)', one_url.get_attribute('href'))[0]
         # 중복 체크
-        server.curs.execute(f"SELECT count(*) FROM diningcode_restaurants WHERE diningcode_id = '{one_id}';")
+        server.curs.execute(f"SELECT count(*) FROM diningcode_restaurants WHERE rid = '{one_id}';")
         if server.curs.fetchone()[0] >= 1: continue
 
         # 클릭해서 열고 활성탭 옮김
@@ -80,7 +83,7 @@ for adr in tqdm(ADR):
                 one_name = driver.find_element_by_css_selector('div.tit-point').text
                 break
             except:
-                time.sleep(1)
+                time.sleep(3)
                 driver.refresh()
         
         try:
@@ -97,8 +100,8 @@ for adr in tqdm(ADR):
         # 식당정보
         server.insert('diningcode_restaurants', line = {
             'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'name': one_name,
-            'diningcode_id': one_id, 
+            'rname': one_name,
+            'rid': one_id, 
             'category': driver.find_element_by_css_selector('div.btxt').text.split('|')[1].strip(),
             'grade' : one_grade,
             'star' : one_star,
@@ -110,24 +113,29 @@ for adr in tqdm(ADR):
         
 
         # 메뉴
+        try:
+            driver.find_element_by_class_name('more-btn').click()
+        except:
+            continue
+
         menu = [m.text for m in driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.l-txt.Restaurant_MenuItem') if m.text != '']
         # price = [int(re.sub('[원,]', "", p.text)) if re.sub('[원,]', "", p.text).isalnum() else p.text 
         price = [p.text
                     for p in driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.r-txt.Restaurant_MenuPrice') if p.text != '']
         
-        if len(menu) != 0:
+        if (len(menu) != 0) and (len(menu) == len(price)):
             for i in range(len(menu)):
                 # 중복 체크
                 server.curs.execute(f"""SELECT count(*) 
                                         FROM diningcode_menu 
-                                        WHERE diningcode_id = '{one_id}'
+                                        WHERE rid = '{one_id}'
                                         AND menu = '{menu[i]}';""")
                 if server.curs.fetchone()[0] >= 1: continue
                 
                 server.insert('diningcode_menu', line = {
                     'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'name': one_name,
-                    'diningcode_id': one_id,
+                    'rname': one_name,
+                    'rid': one_id,
                     'menu' : menu[i],
                     'price' : price[i]
                 })
@@ -153,18 +161,23 @@ for adr in tqdm(ADR):
             for i in range(len(reviewers)):
                 server.curs.execute(f"""SELECT count(*) 
                                         FROM diningcode_reviews 
-                                        WHERE diningcode_id = '{one_id}' AND 
+                                        WHERE rid = '{one_id}' AND 
                                                 review = '{review[i]}';""")
                 if server.curs.fetchone()[0] >= 1: continue
                 # 리뷰
                 try:
                     d = datetime.datetime.strptime(date[i], "%Y년 %m월 %d일") 
                 except:
-                    d = datetime.datetime.strptime(date[i], "2021년 %m월 %d일")
+                    if re.match('[0-9]+월 [0-9]+일', date[i]): 
+                        d = datetime.datetime.strptime("2021년 "+date[i], "%Y년 %m월 %d일")
+                    if re.match('[0-9]+일 전', date[i]):
+                        d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', d)[0]))
+                    
+
                 server.insert('diningcode_reviews', line = {
                     'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'restaurant_name': driver.find_element_by_css_selector('div.tit-point').text,
-                    'diningcode_id': one_id,
+                    'rname': driver.find_element_by_css_selector('div.tit-point').text,
+                    'rid': one_id,
                     'reviewer' : reviewers[i][0],
                     'reviewer_info' : reviewers[i][1],
                     'star' : int(re.findall('[0-9]+', star[i].get_attribute('style'))[0]) / 100 * 5 ,
@@ -176,6 +189,7 @@ for adr in tqdm(ADR):
                 })
         
         # 식당 하나 끝
+        driver.switch_to.window(driver.window_handles[1])
         driver.close()
 # 완전 종료
 driver.quit()
