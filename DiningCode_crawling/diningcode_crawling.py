@@ -36,7 +36,7 @@ ADR = [f[0] for f in server.curs.fetchall()]
 
 # 식당 리스트 받아오기
 options = webdriver.ChromeOptions()
-options.add_argument("--headless")
+# options.add_argument("--headless")
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 
@@ -44,7 +44,7 @@ options.add_argument('--disable-dev-shm-usage')
 chromedriver_path = '/Users/yejin/Downloads/chromedriver'
 driver = webdriver.Chrome(executable_path = chromedriver_path, options = options)
 
-for adr in tqdm(ADR):
+for adr in tqdm(ADR[5:]):
 # adr = ADR[0]
     # 주소지별 사이트 입장
     url = f'https://www.diningcode.com/list.php?query={adr}'
