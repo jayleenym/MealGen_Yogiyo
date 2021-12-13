@@ -27,7 +27,7 @@ from controller import MysqlController
 
 
 options = webdriver.ChromeOptions()
-options.add_argument("--headless")
+# options.add_argument("--headless")
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 
@@ -151,7 +151,7 @@ class DiningCode():
         self.driver.switch_to.window(self.driver.window_handles[1])
         # 메뉴 더보기
         try:
-            self.driver.find_element_by_css_selector('#div_detail a.more-btn').click()
+            self.driver.find_element_by_css_selector('#div_detail div.menu-info a.more-btn').click()
         except:
             pass
         
@@ -196,8 +196,13 @@ class DiningCode():
         # if len(reviewers) != 0:
         #     for i in range(len(reviewers)):
         for one in self.driver.find_elements_by_css_selector('div.latter-graph'):
-            # 리뷰어 아이디
-            reviewer = re.findall('(.*) [(](.*)[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
+            # 리뷰어 아이디 없을 수도 있음
+            try: reviewer = re.findall('(.*) [(].*[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
+            except: reviewer = ""
+
+            # 리뷰어 정보
+            try: info = re.findall('[(](.*)[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
+            except: info = "" 
             
             # 리뷰 내용; 숨김처리 예외
             try: review = one.find_element_by_css_selector('p.review_contents.btxt').text.replace("'", '"')
@@ -228,8 +233,8 @@ class DiningCode():
                 'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'rname': self.driver.find_element_by_css_selector('div.tit-point').text,
                 'rid': self.one_id,
-                'reviewer' : reviewer[0],
-                'reviewer_info' : reviewer[1],
+                'reviewer' : reviewer,
+                'reviewer_info' : info,
                 'star' : int(re.findall('[0-9]+', star.get_attribute('style'))[0]) / 100 * 5 ,
                 'review' : review,
                 'date' : d
