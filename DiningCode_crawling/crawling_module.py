@@ -27,7 +27,7 @@ from controller import MysqlController
 
 
 options = webdriver.ChromeOptions()
-# options.add_argument("--headless")
+options.add_argument("--headless")
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 
@@ -52,7 +52,7 @@ class DiningCode():
         self.one_url = ''
         # 주소지 받아오기
         self.controller.curs.execute('SELECT DISTINCT CONCAT(sigungu, " ",dong) as adr FROM Address;')
-        self.ADR = [f[0] for f in self.controller.curs.fetchall()]
+        self.ADR = ADR = [f[0] for f in self.controller.curs.fetchall() if re.sub('세종특별자치시 ([가-힇]+[면읍\)]|[(]알수없음[)])$', '', str(f[0])) != ""]
 
 
     def get_all_rtr(self, address : str):
@@ -98,13 +98,18 @@ class DiningCode():
                 break
             except:
                 # 여기 맞나 모르겠네????
-                # if self.driver.current_url != one_url.get_attribute('href'):
-                    # self.driver.close()
-                    # self.get_one_rtr(one)
-                    # break
+                # if self.driver.current_url != self.one_url.get_attribute('href'):
+                #     # self.driver.close()
+                #     print('not here!!!')
+                #     self.driver.switch_to.window(self.driver.window_handles[0])
+                #     self.one_url.click()
+                #     time.sleep(1)
+                #     self.driver.switch_to.window(self.driver.window_handles[1])
+                #     print('change completed')
+                #     # self.get_one_rtr(one)
                 # else:
-                    # time.sleep(1.5)
-                    # self.driver.refresh()
+                #     time.sleep(1.5)
+                #     self.driver.refresh()
                 time.sleep(1.5)
                 self.driver.refresh()
 
@@ -120,12 +125,18 @@ class DiningCode():
         except:
             one_star = 0.0
 
+        # 카테고리 없을수도
+        try:
+            one_category = self.driver.find_element_by_css_selector('div.btxt').text.split('|')[1].strip()
+        except:
+            one_category = ''
+
         # 식당 정보 입력
         self.controller.insert('diningcode_restaurants', {
             'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'rname': self.one_name,
             'rid': self.one_id, 
-            'category': self.driver.find_element_by_css_selector('div.btxt').text.split('|')[1].strip(),
+            'category': one_category,
             'grade' : one_grade,
             'star' : one_star,
             'favorite' : int(self.driver.find_element_by_css_selector('div.favor-pic-appra i').text),
@@ -143,8 +154,8 @@ class DiningCode():
             self.driver.find_element_by_css_selector('#div_detail a.more-btn').click()
         except:
             pass
-
-        menu = [m.text for m in self.driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.l-txt.Restaurant_MenuItem') if m.text != '']
+        
+        menu = [m.text.replace("'", '"') for m in self.driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.l-txt.Restaurant_MenuItem') if m.text != '']
         price = [p.text for p in self.driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.r-txt.Restaurant_MenuPrice') if p.text != '']
         
         if (len(menu) != 0) and (len(menu) == len(price)):
@@ -177,57 +188,74 @@ class DiningCode():
             except: break
         
         # 리뷰 크롤링
-        reviewers = [re.findall('(.*) [(](.*)[)]', pr.text)[0] for pr in self.driver.find_elements_by_css_selector('p.person-grade span.btxt')]
-        review = [r.text for r in self.driver.find_elements_by_css_selector('p.review_contents.btxt')]
-        date = [d.text for d in self.driver.find_elements_by_css_selector('span.star-date')]
-        star = [s for s in self.driver.find_elements_by_css_selector('i.star > i')]
+        # reviewers = [re.findall('(.*) [(](.*)[)]', pr.text)[0] for pr in self.driver.find_elements_by_css_selector('p.person-grade span.btxt')]
+        # review = [r.text.replace("'", '"') for r in self.driver.find_elements_by_css_selector('p.review_contents.btxt')]
+        # date = [d.text for d in self.driver.find_elements_by_css_selector('span.star-date')]
+        # star = [s for s in self.driver.find_elements_by_css_selector('i.star > i')]
 
-        if len(reviewers) != 0:
-            for i in range(len(reviewers)):
-                # 중복체크
-                self.controller.curs.execute(f"""SELECT count(*) 
-                                        FROM diningcode_reviews 
-                                        WHERE rid = '{self.one_id}' AND 
-                                                review = '{review[i]}';""")
-                if self.controller.curs.fetchone()[0] >= 1: continue
-                
-                # 리뷰 날짜
-                try:
-                    d = datetime.datetime.strptime(date[i], "%Y년 %m월 %d일") 
-                except:
-                    if re.match('[0-9]+월 [0-9]+일', date[i]): 
-                        d = datetime.datetime.strptime("2021년 "+date[i], "%Y년 %m월 %d일")
-                    if re.match('[0-9]+일 전', date[i]):
-                        d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', d)[0]))
-                    
-                # table에 입력
-                self.controller.insert('diningcode_reviews', line = {
-                    'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'rname': self.one_name,
-                    'rid': self.one_id,
-                    'reviewer' : reviewers[i][0],
-                    'reviewer_info' : reviewers[i][1],
-                    'star' : int(re.findall('[0-9]+', star[i].get_attribute('style'))[0]) / 100 * 5 ,
-                    'review' : review[i],
-                    'date' : d
-                })
+        # if len(reviewers) != 0:
+        #     for i in range(len(reviewers)):
+        for one in self.driver.find_elements_by_css_selector('div.latter-graph'):
+            # 리뷰어 아이디
+            reviewer = re.findall('(.*) [(](.*)[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
+            
+            # 리뷰 내용; 숨김처리 예외
+            try: review = one.find_element_by_css_selector('p.review_contents.btxt').text.replace("'", '"')
+            except: review = ""
+            # 리뷰 중복체크
+            self.controller.curs.execute(f"""SELECT count(*) 
+                                    FROM diningcode_reviews 
+                                    WHERE rid = '{self.one_id}' AND 
+                                            review = '{review}';""")
+            if self.controller.curs.fetchone()[0] >= 1: continue
+
+            # 리뷰 날짜
+            date = one.find_element_by_css_selector('span.star-date').text
+            try:
+                d = datetime.datetime.strptime(date, "%Y년 %m월 %d일") 
+            except:
+                if re.match('[0-9]+월 [0-9]+일', date): 
+                    d = datetime.datetime.strptime("2021년 "+date, "%Y년 %m월 %d일")
+                if re.match('[0-9]+일 전', date):
+                    d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', date)[0]))
+            d = datetime.datetime.strftime(d, '%Y-%m-%d')
+
+            # 별점
+            star = one.find_element_by_css_selector('i.star > i')
+
+            # table에 입력
+            self.controller.insert('diningcode_reviews', line = {
+                'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'rname': self.driver.find_element_by_css_selector('div.tit-point').text,
+                'rid': self.one_id,
+                'reviewer' : reviewer[0],
+                'reviewer_info' : reviewer[1],
+                'star' : int(re.findall('[0-9]+', star.get_attribute('style'))[0]) / 100 * 5 ,
+                'review' : review,
+                'date' : d
+            })
 
 
 if __name__ == '__main__':
     dining = DiningCode(file = "../connection.txt")
     dining.controller._connection_info()
 
-    try:
-        for adr in dining.ADR:
-            rtr_list = dining.get_all_rtr(adr)
-            for r in rtr_list:
-                dining.get_one_info(r)
-                dining.get_one_menus()
-                dining.get_one_rvs()
-                # 하나 크롤링 끝!
-                dining.driver.close()
-                dining.driver.switch_to.window(dining.driver.window_handles[0])
-    except Exception as e:
-        print(e)
-        print(adr)
-        dining.driver.quit()
+    for adr in tqdm(dining.ADR[15:]):
+        rtr_list = dining.get_all_rtr(adr)
+        i = 0
+        while i < len(rtr_list):
+        # for i in range(len(rtr_list)):
+            # try:
+            dining.get_one_info(rtr_list[i])
+            dining.get_one_menus()
+            dining.get_one_rvs()
+            # 하나 크롤링 끝!
+            dining.driver.close()
+            dining.driver.switch_to.window(dining.driver.window_handles[0])
+            i += 1
+            # except Exception as e:
+                # print(e)
+                # print(dining.one_id, dining.one_name)
+                # dining.driver.refresh() 
+
+    dining.driver.quit()

@@ -31,8 +31,8 @@ server = MysqlController(*connect_info)
 
 # 주소지 받아오기
 server.curs.execute('SELECT DISTINCT CONCAT(sigungu, " ",dong) as adr FROM Address;')
-ADR = [f[0] for f in server.curs.fetchall()]
-
+# ADR = [f[0] for f in server.curs.fetchall()]
+ADR = [f[0] for f in server.curs.fetchall() if re.sub('세종특별자치시 ([가-힇]+[면읍\)]|[(]알수없음[)])$', '', str(f[0])) != ""]
 
 # 식당 리스트 받아오기
 options = webdriver.ChromeOptions()

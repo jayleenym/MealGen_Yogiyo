@@ -19,7 +19,7 @@ class MysqlController:
     # temp function(insertion)
     def insert(self, table_name : str = None, line : dict = None):
         columns = ','.join(line.keys())
-        placeholders = ','.join(['%s']*len(line))
+        placeholders = ','.join(["%s"]*len(line))
         sql_command = """INSERT INTO %s(%s) VALUES(%s)"""%(table_name, columns, placeholders)
         self.curs.execute(sql_command, tuple(str(val) for val in line.values()))
         self.conn.commit()
