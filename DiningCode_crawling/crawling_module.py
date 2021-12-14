@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import TimeoutException
 
 from bs4 import BeautifulSoup
 from requests.compat import urlparse, urljoin
@@ -18,7 +19,8 @@ from tqdm import tqdm
 import re
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))) # .py
+# sys.path.append(os.path.dirname(os.path.abspath(os.getcwd()))) # jupyter
 
 # db management libraries
 import pymysql
@@ -32,7 +34,8 @@ options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 
 # Path
-chromedriver_path = '/Users/yejin/Downloads/chromedriver'
+chromedriver_path = '/Users/yejin/Downloads/chromedriver' # mac
+# chromedriver_path = 'C://Users//user//Desktop//chromedriver' # window
 
 class DiningCode():
     def __init__(self, file = None):
@@ -83,7 +86,8 @@ class DiningCode():
 
         # 중복 체크
         self.controller.curs.execute(f"""SELECT count(*) FROM diningcode_restaurants
-                                        WHERE rid = '{self.one_id}';""")
+                                        WHERE rid = '{self.one_id} 
+                                        AND parking is not NULL';""")
         if self.controller.curs.fetchone()[0] >= 1: return
         
         # 클릭해서 open & driver 옮기기
@@ -97,19 +101,6 @@ class DiningCode():
                 self.one_name = self.driver.find_element_by_css_selector('div.tit-point').text
                 break
             except:
-                # 여기 맞나 모르겠네????
-                # if self.driver.current_url != self.one_url.get_attribute('href'):
-                #     # self.driver.close()
-                #     print('not here!!!')
-                #     self.driver.switch_to.window(self.driver.window_handles[0])
-                #     self.one_url.click()
-                #     time.sleep(1)
-                #     self.driver.switch_to.window(self.driver.window_handles[1])
-                #     print('change completed')
-                #     # self.get_one_rtr(one)
-                # else:
-                #     time.sleep(1.5)
-                #     self.driver.refresh()
                 time.sleep(1.5)
                 self.driver.refresh()
 
@@ -130,19 +121,36 @@ class DiningCode():
             one_category = self.driver.find_element_by_css_selector('div.btxt').text.split('|')[1].strip()
         except:
             one_category = ''
-
+        
+        # 주차 여부 없을수도
+        try:
+            one_parking = int('주차' in self.driver.find_element_by_css_selector('ul.list li.char').text)
+        except:
+            one_parking = 0
+        
         # 식당 정보 입력
-        self.controller.insert('diningcode_restaurants', {
-            'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'rname': self.one_name,
-            'rid': self.one_id, 
-            'category': one_category,
-            'grade' : one_grade,
-            'star' : one_star,
-            'favorite' : int(self.driver.find_element_by_css_selector('div.favor-pic-appra i').text),
-            'address' : self.driver.find_element_by_css_selector('li.locat').text,
-            'phone' : self.driver.find_element_by_css_selector('li.tel').text
-        })
+        # 업데이트
+        self.controller.curs.execute(f"""SELECT count(*) FROM diningcode_restaurants
+                                        WHERE rid = '{self.one_id}';""")
+        if self.controller.curs.fetchone()[0] >= 1: 
+            self.controller.curs.execute(f"""
+                UPDATE diningcode_restaurants 
+                SET parking = '{one_parking}', updated_at = now()
+                WHERE rid = '{self.one_id}';""")
+            self.controller.conn.commit()
+        else:
+            self.controller.insert('diningcode_restaurants', {
+                'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'rname': self.one_name,
+                'rid': self.one_id, 
+                'category': one_category,
+                'grade' : one_grade,
+                'star' : one_star,
+                'favorite' : int(self.driver.find_element_by_css_selector('div.favor-pic-appra i').text),
+                'address' : self.driver.find_element_by_css_selector('li.locat').text,
+                'phone' : self.driver.find_element_by_css_selector('li.tel').text,
+                'parking' : one_parking
+            })
 
     
     def get_one_menus(self):
@@ -188,21 +196,17 @@ class DiningCode():
             except: break
         
         # 리뷰 크롤링
-        # reviewers = [re.findall('(.*) [(](.*)[)]', pr.text)[0] for pr in self.driver.find_elements_by_css_selector('p.person-grade span.btxt')]
-        # review = [r.text.replace("'", '"') for r in self.driver.find_elements_by_css_selector('p.review_contents.btxt')]
-        # date = [d.text for d in self.driver.find_elements_by_css_selector('span.star-date')]
-        # star = [s for s in self.driver.find_elements_by_css_selector('i.star > i')]
-
-        # if len(reviewers) != 0:
-        #     for i in range(len(reviewers)):
         for one in self.driver.find_elements_by_css_selector('div.latter-graph'):
-            # 리뷰어 아이디 없을 수도 있음
-            try: reviewer = re.findall('(.*) [(].*[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
-            except: reviewer = ""
-
-            # 리뷰어 정보
-            try: info = re.findall('[(](.*)[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
-            except: info = "" 
+            # 리뷰어 아이디, 없을 수도 있음
+            try:
+                reviewer = re.findall('(.*) [(].*[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
+            except:
+                reviewer = ""
+            
+            try:
+                info = re.findall('[(](.*)[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
+            except:
+                info = ""
             
             # 리뷰 내용; 숨김처리 예외
             try: review = one.find_element_by_css_selector('p.review_contents.btxt').text.replace("'", '"')
@@ -223,7 +227,10 @@ class DiningCode():
                     d = datetime.datetime.strptime("2021년 "+date, "%Y년 %m월 %d일")
                 if re.match('[0-9]+일 전', date):
                     d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', date)[0]))
-            d = datetime.datetime.strftime(d, '%Y-%m-%d')
+            if type(d) == datetime.datetime:
+                d = datetime.datetime.strftime(d, '%Y-%m-%d')
+            else:
+                d = datetime.datetime.strftime(datetime.datetime(1, 1, 1), '%Y-%m-%d')
 
             # 별점
             star = one.find_element_by_css_selector('i.star > i')
@@ -239,28 +246,31 @@ class DiningCode():
                 'review' : review,
                 'date' : d
             })
-
-
-if __name__ == '__main__':
+            
+if __name__ == "__main__":
     dining = DiningCode(file = "../connection.txt")
     dining.controller._connection_info()
 
-    for adr in tqdm(dining.ADR[15:]):
-        rtr_list = dining.get_all_rtr(adr)
-        i = 0
-        while i < len(rtr_list):
-        # for i in range(len(rtr_list)):
-            # try:
-            dining.get_one_info(rtr_list[i])
-            dining.get_one_menus()
-            dining.get_one_rvs()
-            # 하나 크롤링 끝!
-            dining.driver.close()
-            dining.driver.switch_to.window(dining.driver.window_handles[0])
-            i += 1
-            # except Exception as e:
-                # print(e)
-                # print(dining.one_id, dining.one_name)
-                # dining.driver.refresh() 
-
-    dining.driver.quit()
+    with tqdm(total = len(dining.ADR)-74) as tm:
+        i = 74
+        while i < len(dining.ADR):
+            adr = dining.ADR[i]
+            try:
+                rtr_list = dining.get_all_rtr(adr)
+                for r in rtr_list:
+                    dining.get_one_info(r)
+                    dining.get_one_menus()
+                    dining.get_one_rvs()
+                    # 하나 크롤링 끝!
+                    dining.driver.close()
+                    dining.driver.switch_to.window(dining.driver.window_handles[0])
+                i += 1
+                tm.update(1)
+            except Exception as e:
+                print(e)
+                dining.driver.quit()
+            except TimeoutException as ex:
+                dining.driver.quit()
+                print(ex)
+                dining = DiningCode(file = "../connection.txt")
+                print("********RECONNECT********")    
