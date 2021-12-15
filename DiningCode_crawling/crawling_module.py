@@ -86,8 +86,8 @@ class DiningCode():
 
         # 중복 체크
         self.controller.curs.execute(f"""SELECT count(*) FROM diningcode_restaurants
-                                        WHERE rid = '{self.one_id} 
-                                        AND parking is not NULL';""")
+                                        WHERE rid = '{self.one_id}' 
+                                        AND parking is not NULL;""")
         if self.controller.curs.fetchone()[0] >= 1: return
         
         # 클릭해서 open & driver 옮기기
@@ -251,8 +251,8 @@ if __name__ == "__main__":
     dining = DiningCode(file = "../connection.txt")
     dining.controller._connection_info()
 
-    with tqdm(total = len(dining.ADR)-74) as tm:
-        i = 74
+    with tqdm(total = len(dining.ADR)) as tm:
+        i = 0
         while i < len(dining.ADR):
             adr = dining.ADR[i]
             try:
