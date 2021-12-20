@@ -227,6 +227,8 @@ class DiningCode():
                     d = datetime.datetime.strptime("2021년 "+date, "%Y년 %m월 %d일")
                 if re.match('[0-9]+일 전', date):
                     d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', date)[0]))
+                if re.match('[0-9]+시간 전', date):
+                    d = datetime.datetime.now() - datetime.timedelta(hours = int(re.findall('[0-9]+시간 전', date)[0]))
             if type(d) == datetime.datetime:
                 d = datetime.datetime.strftime(d, '%Y-%m-%d')
             else:
