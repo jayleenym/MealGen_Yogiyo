@@ -229,6 +229,14 @@ class DiningCode():
                     d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', date)[0]))
                 if re.match('[0-9]+시간 전', date):
                     d = datetime.datetime.now() - datetime.timedelta(hours = int(re.findall('[0-9]+시간 전', date)[0]))
+                if re.match("어제 [가-힇]+ [0-9]+시 [0-9]+분", date):
+                    yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
+                    hr = int(re.findall("([0-9]+)시", 날짜)[0])
+                    mt = int(re.findall("([0-9]+)분", 날짜)[0])
+                    if re.findall("([가-힇]+) [0-9]+시", 날짜)[0] == '오후': hr += 12
+
+                    d = datetime.datetime(yesterday.year, yesterday.month, yesterday.day, hr, mt)
+                
             if type(d) == datetime.datetime:
                 d = datetime.datetime.strftime(d, '%Y-%m-%d')
             else:
