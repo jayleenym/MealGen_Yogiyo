@@ -11,6 +11,7 @@ from requests.compat import urlparse, urljoin
 from requests.exceptions import HTTPError
 from requests import Session
 import requests
+import pickle
 
 import pandas as pd
 import time
@@ -300,3 +301,4 @@ if __name__ == "__main__":
             except:
                 errors.append(adr)
                 dining.driver.quit()
+    pickle.dump(errors, open("./error_address.txt", "wb"))
