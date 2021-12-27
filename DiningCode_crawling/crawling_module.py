@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 
 from bs4 import BeautifulSoup
 from requests.compat import urlparse, urljoin
@@ -54,8 +54,10 @@ class DiningCode():
         self.one_id = ''
         self.one_url = ''
         # 주소지 받아오기
-        self.controller.curs.execute('SELECT DISTINCT CONCAT(sigungu, " ",dong) as adr FROM Address;')
-        self.ADR = ADR = [f[0] for f in self.controller.curs.fetchall() if re.sub('세종특별자치시 ([가-힇]+[면읍\)]|[(]알수없음[)])$', '', str(f[0])) != ""]
+        self.controller.curs.execute('SELECT DISTINCT CONCAT(sido, " ", sigungu, " ",dong) as adr FROM Address;')
+        self.ADR = [f[0].replace("세종특별자치시 세종특별자치시", "세종특별자치시") 
+                    for f in self.controller.curs.fetchall() 
+                    if (f[0] != None) and (f[0] != "세종특별자치시 세종특별자치시 (알수없음)")]
 
 
     def get_all_rtr(self, address : str):
@@ -68,8 +70,10 @@ class DiningCode():
         # 더보기 클릭(최대 100개)
         while True:
             try:
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+                # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
                 self.driver.find_element_by_css_selector('#div_list_more').click()
+                # 밑바닥 클릭
+                self.driver.find_element_by_css_selector('#contents > div.localeft-cont > div:nth-child(3)').click()
                 time.sleep(1.5)
             except:
                 break
@@ -229,13 +233,21 @@ class DiningCode():
                     d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', date)[0]))
                 if re.match('[0-9]+시간 전', date):
                     d = datetime.datetime.now() - datetime.timedelta(hours = int(re.findall('[0-9]+시간 전', date)[0]))
+                if re.match('[0-9]+분 전', date):
+                    d = datetime.datetime.now() - datetime.timedelta(minutes= int(re.findall('[0-9]+분 전', date)[0]))
+                
                 if re.match("어제 [가-힇]+ [0-9]+시 [0-9]+분", date):
                     yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
-                    hr = int(re.findall("([0-9]+)시", 날짜)[0])
-                    mt = int(re.findall("([0-9]+)분", 날짜)[0])
-                    if re.findall("([가-힇]+) [0-9]+시", 날짜)[0] == '오후': hr += 12
-
+                    hr = int(re.findall("([0-9]+)시", date)[0])
+                    mt = int(re.findall("([0-9]+)분", date)[0])
+                    if re.findall("([가-힇]+) [0-9]+시", date)[0] == '오후': hr += 12
                     d = datetime.datetime(yesterday.year, yesterday.month, yesterday.day, hr, mt)
+                if re.match("오늘 [가-힇]+ [0-9]+시 [0-9]+분", date):
+                    today = datetime.datetime.now()
+                    hr = int(re.findall("([0-9]+)시", date)[0])
+                    mt = int(re.findall("([0-9]+)분", date)[0])
+                    if re.findall("([가-힇]+) [0-9]+시", date)[0] == '오후': hr += 12
+                    d = datetime.datetime(today.year, today.month, today.day, hr, mt)
                 
             if type(d) == datetime.datetime:
                 d = datetime.datetime.strftime(d, '%Y-%m-%d')
@@ -260,7 +272,7 @@ class DiningCode():
 if __name__ == "__main__":
     dining = DiningCode(file = "../connection.txt")
     dining.controller._connection_info()
-
+    errors = []
     with tqdm(total = len(dining.ADR)) as tm:
         i = 0
         while i < len(dining.ADR):
@@ -276,11 +288,15 @@ if __name__ == "__main__":
                     dining.driver.switch_to.window(dining.driver.window_handles[0])
                 i += 1
                 tm.update(1)
-            except Exception as e:
-                print(e)
-                dining.driver.quit()
             except TimeoutException as ex:
                 dining.driver.quit()
                 print(ex)
                 dining = DiningCode(file = "../connection.txt")
                 print("********RECONNECT********")    
+
+            except ElementClickInterceptedException as ec:
+                time.sleep(5)
+                dining.driver.refresh()
+            except:
+                errors.append(adr)
+                dining.driver.quit()
