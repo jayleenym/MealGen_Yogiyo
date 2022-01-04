@@ -38,7 +38,7 @@ options.add_argument('--disable-dev-shm-usage')
 chromedriver_path = '/Users/yejin/Downloads/chromedriver' # mac
 # chromedriver_path = 'C://Users//user//Desktop//chromedriver' # window
 
-class DiningCode():
+class Siksin():
     def __init__(self, file = None):
         if not file:
             _id = input("input id(root) : ")
@@ -51,113 +51,115 @@ class DiningCode():
         self.controller = MysqlController(*connect_info)
         self.driver = webdriver.Chrome(executable_path = chromedriver_path, options = options)
         # 기본 설정
-        self.one_name = ''
+        self.one = ''
         self.one_id = ''
         self.one_url = ''
         # 주소지 받아오기
-        self.controller.curs.execute('SELECT DISTINCT CONCAT(sido, " ", sigungu, " ",dong) as adr FROM Address;')
+        self.controller.curs.execute('SELECT DISTINCT CONCAT(sido, " ",dong) as adr FROM Address;')
         self.ADR = [f[0].replace("세종특별자치시 세종특별자치시", "세종특별자치시") 
                     for f in self.controller.curs.fetchall() 
-                    if (f[0] != None) and (f[0] != "세종특별자치시 세종특별자치시 (알수없음)")]
+                    if (f[0] != None) and (f[0] != "세종특별자치시 (알수없음)")]
 
 
     def get_all_rtr(self, address : str):
-       # 첫 window로 들어가기
-        self.driver.switch_to.window(self.driver.window_handles[0])
         # 위치로 페이지 들어가기
-        url = f'https://www.diningcode.com/list.php?query={address}'
+        url = f'https://www.siksinhot.com/search?keywords={address}'
         self.driver.get(url)
 
-        # 더보기 클릭(최대 100개)
+        # 더보기 클릭
         while True:
             try:
                 # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-                self.driver.find_element_by_css_selector('#div_list_more').click()
-                # 밑바닥 클릭
-                self.driver.find_element_by_css_selector('#contents > div.localeft-cont > div:nth-child(3)').click()
-                time.sleep(1.5)
+                self.driver.find_element_by_css_selector('a.btn_sMore').click()
+                time.sleep(1)
             except:
                 break
 
         # 더보기 한 상태로 식당 리스트 가져오기 : 광고 제거 잘 되는지 검사?
-        res_list = [res for res in self.driver.find_elements_by_css_selector('#div_list > li') if type(res.get_property('onmouseenter')) == dict] 
+        res_list = [res for res in self.driver.find_elements_by_css_selector('#schMove1 > div.listTy1 > ul > li')] 
         return res_list
 
     
     def get_one_info(self, one):
-        self.driver.switch_to.window(self.driver.window_handles[0])
-        self.one_url = one.find_element_by_tag_name('a')
-        self.one_id = re.findall('rid=(.*)', self.one_url.get_attribute('href'))[0]
+        # self.driver.switch_to.window(self.driver.window_handles[0])
+        self.one_url = one.find_element_by_css_selector("a").get_attribute('href')
+        self.one_id = re.findall('/P/([0-9]+)', self.one_url)[0]
 
         # 중복 체크
-        self.controller.curs.execute(f"""SELECT count(*) FROM diningcode_restaurants
+        self.controller.curs.execute(f"""SELECT count(*) FROM siksin_restaurants
                                         WHERE rid = '{self.one_id}' 
                                         AND parking is not NULL;""")
+                                        
         if self.controller.curs.fetchone()[0] >= 1: return
         
-        # 클릭해서 open & driver 옮기기
-        self.one_url.click()
-        time.sleep(1)
-        self.driver.switch_to.window(self.driver.window_handles[1])
+        # 바로 driver로 열기
+        self.driver.get(self.one_url)
 
-        # 식당명 제대로 뜰 때까지
+        # 식당 정보 제대로 뜰 때까지
         while True:
             try:
-                self.one_name = self.driver.find_element_by_css_selector('div.tit-point').text
+                self.one = self.driver.find_element_by_css_selector('div.store_name_score')
                 break
             except:
                 time.sleep(1.5)
                 self.driver.refresh()
 
-        # 점수 없을수도
-        try:
-            one_grade = float(self.driver.find_element_by_css_selector('div.sns-grade strong').text.replace('점', ''))
-        except:
-            one_grade = 0.0
-        
-        # 사용자 평점 없을수도
-        try:
-            one_star = float(self.driver.find_element_by_css_selector('div.sns-grade span.point strong').text.replace('점', ''))
-        except:
-            one_star = 0.0
+        # 주차 없을 수 있음
+        try: one_info = re.findall('(.*)([0-9][.][0-9]|평가중).*(주차|발렛)', self.one.find_element_by_css_selector('h3').text)
+        except: one_info = re.findall('(.*)([0-9][.][0-9]|평가중)', self.one.find_element_by_css_selector('h3').text)
 
-        # 카테고리 없을수도
-        try:
-            one_category = self.driver.find_element_by_css_selector('div.btxt').text.split('|')[1].strip()
-        except:
-            one_category = ''
+        # 이름
+        try: one_name = one_info[0]
+        except: one_name = ""
         
-        # 주차 여부 없을수도
-        try:
-            one_parking = int('주차' in self.driver.find_element_by_css_selector('ul.list li.char').text)
-        except:
-            one_parking = 0
+        # 사용자 평점
+        try: one_star = float(one_info[1])
+        except: one_star = 0.0
+
+        # 업종 분류 전체
+        try: one_category = self.driver.find_element_by_css_selector('#contents > div > div > div.content > div.sec_left > div > div:nth-child(1) > div:nth-child(1) > p').text.split(">")
+        except: one_category = ''
         
+        # 주차 여부
+        try: one_parking = int(bool(one_info[2]))
+        except: one_parking = 0
+        
+        # 주소
+        try: 
+            one_adr = self.driver.find_element_by_css_selector('a.txt_adr')
+            one_road = one_adr.find_element_by_xpath("../span").text.replace("(지번) ", "")
+        except: 
+            one_adr = ''
+            one_road = ''
+        
+        # 즐겨찾기, 조회수
+        try:
+            one_fv = [int(x.text) for x in self.one.find_elements_by_css_selector("ul > li")
+                        if x.text != '']
+        except: one_fv = [0] * 4
+
         # 식당 정보 입력
         # 업데이트
-        self.controller.curs.execute(f"""SELECT count(*) FROM diningcode_restaurants
+        self.controller.curs.execute(f"""SELECT count(*) FROM siksin_restaurants
                                         WHERE rid = '{self.one_id}';""")
-        if self.controller.curs.fetchone()[0] >= 1: 
-            self.controller.curs.execute(f"""
-                UPDATE diningcode_restaurants 
-                SET parking = '{one_parking}', updated_at = now()
-                WHERE rid = '{self.one_id}';""")
-            self.controller.conn.commit()
+        if self.controller.curs.fetchone()[0] >= 1: return
         else:
-            self.controller.insert('diningcode_restaurants', {
+            self.controller.insert('siksin_restaurants', 
+            {
                 'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'rname': self.one_name,
+                'rname': one_name,
                 'rid': self.one_id, 
-                'category': one_category,
-                'grade' : one_grade,
+                'main_category': one_category[0].strip(),
+                'sub_category' : one_category[1].strip(),
                 'star' : one_star,
-                'favorite' : int(self.driver.find_element_by_css_selector('div.favor-pic-appra i').text),
-                'address' : self.driver.find_element_by_css_selector('li.locat').text,
-                'phone' : self.driver.find_element_by_css_selector('li.tel').text,
-                'parking' : one_parking
+                'favorite' : one_fv[1],
+                'address' : one_adr.text,
+                'road_address' : one_road,
+                'phone' : self.driver.find_element_by_css_selector('div.p_tel p').text,
+                'parking' : one_parking,
+                'view' : one_fv[2]
             })
-
-    
+                
     def get_one_menus(self):
         # 안 열려 있으면 열기 
         if len(self.driver.window_handles) == 1: self.one_url.click()
