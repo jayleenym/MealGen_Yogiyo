@@ -30,9 +30,10 @@ from controller import MysqlController
 
 
 options = webdriver.ChromeOptions()
-# options.add_argument("--headless")
+options.add_argument("--headless")
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
+options.add_argument('lang=ko_KR')
 
 # Path
 chromedriver_path = '/Users/yejin/Downloads/chromedriver' # mac
@@ -80,13 +81,14 @@ class Siksin():
                 break
 
         # 더보기 한 상태로 식당 리스트 가져오기
-        res_list = [res for res in self.driver.find_elements_by_css_selector('#schMove1 > div.listTy1 > ul > li')] 
+        res_list = [res.find_element_by_css_selector('a').get_attribute('href') 
+                    for res in self.driver.find_elements_by_css_selector('#schMove1 > div.listTy1 > ul > li')] 
         return res_list
 
     
     def get_one_info(self, one):
-        # self.driver.switch_to.window(self.driver.window_handles[0])
-        self.one_url = one.find_element_by_css_selector("a").get_attribute('href')
+        self.driver.get(one)
+        self.one_url = one
         self.one_id = re.findall('/P/([0-9]+)', self.one_url)[0]
 
         # 중복 체크
@@ -109,8 +111,8 @@ class Siksin():
                 self.driver.refresh()
 
         # 주차 없을 수 있음
-        try: one_info = re.findall('(.*)([0-9][.][0-9]|평가중).*(주차|발렛)', self.one.find_element_by_css_selector('h3').text)
-        except: one_info = re.findall('(.*)([0-9][.][0-9]|평가중)', self.one.find_element_by_css_selector('h3').text)
+        try: one_info = re.findall('(.*)([0-9][.][0-9]|평가중).*(주차|발렛)?', self.one.find_element_by_css_selector('h3').text)[0]
+        except: one_info = re.findall('(.*)([0-9][.][0-9]|평가중)', self.one.find_element_by_css_selector('h3').text)[0]
 
         # 이름
         try: self.one_name = one_info[0]
@@ -142,6 +144,10 @@ class Siksin():
                         if x.text != '']
         except: one_fv = [0] * 4
 
+        # 전화
+        try: one_phone = self.driver.find_element_by_css_selector('div.p_tel p').text
+        except: one_phone = ""
+
         # 식당 정보 입력
         # 업데이트
         self.controller.curs.execute(f"""SELECT count(*) FROM siksin_restaurants
@@ -159,14 +165,13 @@ class Siksin():
                 'favorite' : one_fv[1],
                 'address' : one_adr.text,
                 'road_address' : one_road,
-                'phone' : self.driver.find_element_by_css_selector('div.p_tel p').text,
+                'phone' : one_phone,
                 'parking' : one_parking,
                 'view' : one_fv[2]
             })
 
     
-    def get_one_menus(self):
-              
+    def get_one_menus(self):        
         menu = [m.text.replace("'", '"').split("\n") for m in self.driver.find_elements_by_css_selector('ul.menu_ul > li') if m.text != '']
         
         for m in menu:
@@ -187,6 +192,9 @@ class Siksin():
 
     
     def get_one_rvs(self):
+        # 안 열려 있으면 열기 
+        # if len(self.driver.window_handles) == 1: self.one_url.click()
+        # self.driver.switch_to.window(self.driver.window_handles[1])
         # 더보기
         while True:
             try:
@@ -204,7 +212,7 @@ class Siksin():
             try: star = float(one.find_element_by_css_selector("div.newStarBox").text)
             except: star = 0.0
             
-            try: review = one.find_element_by_css_selector("div.score_story p").text
+            try: review = one.find_element_by_css_selector("div.score_story p").text.replace("'", '"')
             except: review = ""
 
             try: heart = int(re.findall('[0-9]+', one.find_element_by_css_selector("a.btn_like"))[0])
@@ -232,33 +240,38 @@ if __name__ == "__main__":
     siksin = Siksin(file = "../connection.txt")
     siksin.controller._connection_info()
     errors = []
-    with tqdm(total = len(siksin.ADR)) as tm:
-        i = 0
-        while i < len(siksin.ADR):
-            adr = siksin.ADR[i]
-            try:
-                rtr_list = siksin.get_all_rtr(adr)
-                if rtr_list == -1:
-                    i += 1
-                    break
-                for r in rtr_list:
-                    siksin.get_one_info(r)
-                    siksin.get_one_menus()
-                    siksin.get_one_rvs()
-                    # 하나 크롤링 끝!
-                    # siksin.driver.close()
+with tqdm(total = len(siksin.ADR)) as tm:
+    i = 0
+    while i < len(siksin.ADR):
+        adr = siksin.ADR[i]
+        try:
+            rtr_list = siksin.get_all_rtr(adr)
+            if rtr_list == -1:
                 i += 1
-                tm.update(1)
-            except TimeoutException as ex:
-                siksin.driver.quit()
-                print(ex)
-                siksin = Siksin(file = "../connection.txt")
-                print("********RECONNECT********")    
-
-            except ElementClickInterceptedException as ec:
-                time.sleep(5)
-                siksin.driver.refresh()
-            except:
-                errors.append(adr)
-                siksin.driver.quit()
-    pickle.dump(errors, open("./error_address.txt", "wb"))
+                break
+            for r in rtr_list[40:]:
+                # print(r)
+                siksin.get_one_info(r)
+                siksin.get_one_menus()
+                siksin.get_one_rvs()
+                # 하나 크롤링 끝!
+                    # siksin.driver.close()
+            i += 1
+            tm.update(1)
+        except TimeoutException as ex:
+            siksin.driver.quit()
+            print(ex)
+            siksin = Siksin(file = "../connection.txt")
+            print("******** RECONNECT ********")
+        except ElementClickInterceptedException as ec:
+            time.sleep(5)
+            siksin.driver.refresh()
+        except Exception as e:
+            print(adr + ": " + e)
+            # i += 100
+            errors = errors.append(adr)
+            i += 1
+            siksin.driver.quit()
+            siksin = Siksin(file = "../connection.txt")
+            print("****** QUIT & RECONNECT ******")
+pickle.dump(errors, open("./error_address.txt", "wb"))

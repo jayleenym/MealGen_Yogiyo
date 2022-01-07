@@ -34,7 +34,7 @@ COMMENT '식신 식당 정보';
 """
 
 ss_menu = """
-CREATE TABLE siksin_men신
+CREATE TABLE siksin_menu
 (
     _id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "ID",
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성 일시',
@@ -80,7 +80,7 @@ if __name__=="__main__":
     cont = MysqlController(*connect_info)
     cont._connection_info()
 
-    # table_creation(cont, tformat = ss_res)
-    # table_creation(cont, tformat = ss_menu)
+    table_creation(cont, tformat = ss_res)
+    table_creation(cont, tformat = ss_menu)
     table_creation(cont, tformat = ss_rev)
     cont.curs.close()
