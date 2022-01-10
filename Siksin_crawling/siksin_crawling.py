@@ -30,9 +30,10 @@ from controller import MysqlController
 
 
 options = webdriver.ChromeOptions()
-# options.add_argument("--headless")
+options.add_argument("--headless")
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
+options.add_argument('lang=ko_KR')
 
 # Path
 chromedriver_path = '/Users/yejin/Downloads/chromedriver' # mac
@@ -54,18 +55,33 @@ class Siksin():
         self.one = ''
         self.one_id = ''
         self.one_url = ''
+        self.one_name = ''
+
         # 주소지 받아오기
+<<<<<<< HEAD
         self.controller.curs.execute('SELECT DISTINCT CONCAT(sido, " ",dong) as adr FROM Address;')
+=======
+        self.controller.curs.execute('SELECT DISTINCT CONCAT(sigungu, " ",dong) as adr FROM Address;')
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         self.ADR = [f[0].replace("세종특별자치시 세종특별자치시", "세종특별자치시") 
                     for f in self.controller.curs.fetchall() 
                     if (f[0] != None) and (f[0] != "세종특별자치시 (알수없음)")]
 
 
     def get_all_rtr(self, address : str):
+<<<<<<< HEAD
         # 위치로 페이지 들어가기
         url = f'https://www.siksinhot.com/search?keywords={address}'
         self.driver.get(url)
 
+=======
+        # 페이지 들어가기
+        url = f'https://www.siksinhot.com/search?keywords={address}'
+        self.driver.get(url)
+        # 핫플레이스 태그 없으면 통과
+        if '핫플레이스' not in self.driver.find_element_by_css_selector('div.area_recommand_tag').text:
+            return -1
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         # 더보기 클릭
         while True:
             try:
@@ -75,14 +91,25 @@ class Siksin():
             except:
                 break
 
+<<<<<<< HEAD
         # 더보기 한 상태로 식당 리스트 가져오기 : 광고 제거 잘 되는지 검사?
         res_list = [res for res in self.driver.find_elements_by_css_selector('#schMove1 > div.listTy1 > ul > li')] 
+=======
+        # 더보기 한 상태로 식당 리스트 가져오기
+        res_list = [res.find_element_by_css_selector('a').get_attribute('href') 
+                    for res in self.driver.find_elements_by_css_selector('#schMove1 > div.listTy1 > ul > li')] 
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         return res_list
 
     
     def get_one_info(self, one):
+<<<<<<< HEAD
         # self.driver.switch_to.window(self.driver.window_handles[0])
         self.one_url = one.find_element_by_css_selector("a").get_attribute('href')
+=======
+        self.driver.get(one)
+        self.one_url = one
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         self.one_id = re.findall('/P/([0-9]+)', self.one_url)[0]
 
         # 중복 체크
@@ -105,12 +132,21 @@ class Siksin():
                 self.driver.refresh()
 
         # 주차 없을 수 있음
+<<<<<<< HEAD
         try: one_info = re.findall('(.*)([0-9][.][0-9]|평가중).*(주차|발렛)', self.one.find_element_by_css_selector('h3').text)
         except: one_info = re.findall('(.*)([0-9][.][0-9]|평가중)', self.one.find_element_by_css_selector('h3').text)
 
         # 이름
         try: one_name = one_info[0]
         except: one_name = ""
+=======
+        try: one_info = re.findall('(.*)([0-9][.][0-9]|평가중).*(주차|발렛)?', self.one.find_element_by_css_selector('h3').text)[0]
+        except: one_info = re.findall('(.*)([0-9][.][0-9]|평가중)', self.one.find_element_by_css_selector('h3').text)[0]
+
+        # 이름
+        try: self.one_name = one_info[0]
+        except: self.one_name = ""
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         
         # 사용자 평점
         try: one_star = float(one_info[1])
@@ -138,6 +174,13 @@ class Siksin():
                         if x.text != '']
         except: one_fv = [0] * 4
 
+<<<<<<< HEAD
+=======
+        # 전화
+        try: one_phone = self.driver.find_element_by_css_selector('div.p_tel p').text
+        except: one_phone = ""
+
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         # 식당 정보 입력
         # 업데이트
         self.controller.curs.execute(f"""SELECT count(*) FROM siksin_restaurants
@@ -155,6 +198,7 @@ class Siksin():
                 'favorite' : one_fv[1],
                 'address' : one_adr.text,
                 'road_address' : one_road,
+<<<<<<< HEAD
                 'phone' : self.driver.find_element_by_css_selector('div.p_tel p').text,
                 'parking' : one_parking,
                 'view' : one_fv[2]
@@ -172,135 +216,115 @@ class Siksin():
         
         menu = [m.text.replace("'", '"') for m in self.driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.l-txt.Restaurant_MenuItem') if m.text != '']
         price = [p.text for p in self.driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.r-txt.Restaurant_MenuPrice') if p.text != '']
+=======
+                'phone' : one_phone,
+                'parking' : one_parking,
+                'view' : one_fv[2]
+            })
+
+    
+    def get_one_menus(self):        
+        menu = [m.text.replace("'", '"').split("\n") for m in self.driver.find_elements_by_css_selector('ul.menu_ul > li') if m.text != '']
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         
-        if (len(menu) != 0) and (len(menu) == len(price)):
-            for i in range(len(menu)):
-                # 중복 체크
-                self.controller.curs.execute(f"""SELECT count(*) 
-                                        FROM diningcode_menu 
-                                        WHERE rid = '{self.one_id}'
-                                        AND menu = '{menu[i]}';""")
-                if self.controller.curs.fetchone()[0] >= 1: continue
-                
-                self.controller.insert('diningcode_menu', line = {
-                    'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'rname': self.one_name,
-                    'rid': self.one_id,
-                    'menu' : menu[i],
-                    'price' : price[i]
-                })
+        for m in menu:
+            # 중복 체크
+            self.controller.curs.execute(f"""SELECT count(*) 
+                                    FROM siksin_menu 
+                                    WHERE rid = '{self.one_id}'
+                                    AND menu = '{m[0]}';""")
+            if self.controller.curs.fetchone()[0] >= 1: continue
+            
+            self.controller.insert('siksin_menu', line = {
+                'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'rname': self.one_name,
+                'rid': self.one_id,
+                'menu' : m[0],
+                'price' : m[1]
+            })
 
     
     def get_one_rvs(self):
         # 안 열려 있으면 열기 
-        if len(self.driver.window_handles) == 1: self.one_url.click()
-        self.driver.switch_to.window(self.driver.window_handles[1])
+        # if len(self.driver.window_handles) == 1: self.one_url.click()
+        # self.driver.switch_to.window(self.driver.window_handles[1])
         # 더보기
         while True:
             try:
-                self.driver.find_element_by_css_selector('#div_more_review').click()
+                self.driver.find_element_by_css_selector('div.siksin_review a.btn_sMore').click()
                 time.sleep(1.2)
             except: break
         
         # 리뷰 크롤링
-        for one in self.driver.find_elements_by_css_selector('div.latter-graph'):
+        for one in self.driver.find_elements_by_css_selector('div.rList > ul > li.false'):
+
             # 리뷰어 아이디, 없을 수도 있음
-            try:
-                reviewer = re.findall('(.*) [(].*[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
-            except:
-                reviewer = ""
+            try: reviewer = one.find_element_by_css_selector('div.name_data').text
+            except: reviewer = ""
             
-            try:
-                info = re.findall('[(](.*)[)]', one.find_element_by_css_selector('p.person-grade span.btxt').text)[0]
-            except:
-                info = ""
+            try: star = float(one.find_element_by_css_selector("div.newStarBox").text)
+            except: star = 0.0
             
-            # 리뷰 내용; 숨김처리 예외
-            try: review = one.find_element_by_css_selector('p.review_contents.btxt').text.replace("'", '"')
+            try: review = one.find_element_by_css_selector("div.score_story p").text.replace("'", '"')
             except: review = ""
+
+            try: heart = int(re.findall('[0-9]+', one.find_element_by_css_selector("a.btn_like"))[0])
+            except: heart = 0
+
             # 리뷰 중복체크
             self.controller.curs.execute(f"""SELECT count(*) 
-                                    FROM diningcode_reviews 
+                                    FROM siksin_reviews 
                                     WHERE rid = '{self.one_id}' AND 
                                             review = '{review}';""")
             if self.controller.curs.fetchone()[0] >= 1: continue
 
-            # 리뷰 날짜
-            date = one.find_element_by_css_selector('span.star-date').text
-            try:
-                d = datetime.datetime.strptime(date, "%Y년 %m월 %d일") 
-            except:
-                if re.match('[0-9]+월 [0-9]+일', date): 
-                    d = datetime.datetime.strptime("2021년 "+date, "%Y년 %m월 %d일")
-                if re.match('[0-9]+일 전', date):
-                    d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', date)[0]))
-                if re.match('[0-9]+시간 전', date):
-                    d = datetime.datetime.now() - datetime.timedelta(hours = int(re.findall('[0-9]+시간 전', date)[0]))
-                if re.match('[0-9]+분 전', date):
-                    d = datetime.datetime.now() - datetime.timedelta(minutes= int(re.findall('[0-9]+분 전', date)[0]))
-                
-                if re.match("어제 [가-힇]+ [0-9]+시 [0-9]+분", date):
-                    yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
-                    hr = int(re.findall("([0-9]+)시", date)[0])
-                    mt = int(re.findall("([0-9]+)분", date)[0])
-                    if re.findall("([가-힇]+) [0-9]+시", date)[0] == '오후': hr += 12
-                    d = datetime.datetime(yesterday.year, yesterday.month, yesterday.day, hr, mt)
-                if re.match("오늘 [가-힇]+ [0-9]+시 [0-9]+분", date):
-                    today = datetime.datetime.now()
-                    hr = int(re.findall("([0-9]+)시", date)[0])
-                    mt = int(re.findall("([0-9]+)분", date)[0])
-                    if re.findall("([가-힇]+) [0-9]+시", date)[0] == '오후': hr += 12
-                    d = datetime.datetime(today.year, today.month, today.day, hr, mt)
-                
-            if type(d) == datetime.datetime:
-                d = datetime.datetime.strftime(d, '%Y-%m-%d')
-            else:
-                d = datetime.datetime.strftime(datetime.datetime(1, 1, 1), '%Y-%m-%d')
-
-            # 별점
-            star = one.find_element_by_css_selector('i.star > i')
-
             # table에 입력
-            self.controller.insert('diningcode_reviews', line = {
+            self.controller.insert('siksin_reviews', line = {
                 'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'rname': self.driver.find_element_by_css_selector('div.tit-point').text,
+                'rname': self.one_name,
                 'rid': self.one_id,
                 'reviewer' : reviewer,
-                'reviewer_info' : info,
-                'star' : int(re.findall('[0-9]+', star.get_attribute('style'))[0]) / 100 * 5 ,
-                'review' : review,
-                'date' : d
+                'heart' : heart,
+                'star' : star,
+                'review' : review
             })
             
 if __name__ == "__main__":
-    dining = DiningCode(file = "../connection.txt")
-    dining.controller._connection_info()
+    siksin = Siksin(file = "../connection.txt")
+    siksin.controller._connection_info()
     errors = []
-    with tqdm(total = len(dining.ADR)) as tm:
-        i = 0
-        while i < len(dining.ADR):
-            adr = dining.ADR[i]
-            try:
-                rtr_list = dining.get_all_rtr(adr)
-                for r in rtr_list:
-                    dining.get_one_info(r)
-                    dining.get_one_menus()
-                    dining.get_one_rvs()
-                    # 하나 크롤링 끝!
-                    dining.driver.close()
-                    dining.driver.switch_to.window(dining.driver.window_handles[0])
+with tqdm(total = len(siksin.ADR)) as tm:
+    i = 0
+    while i < len(siksin.ADR):
+        adr = siksin.ADR[i]
+        try:
+            rtr_list = siksin.get_all_rtr(adr)
+            if rtr_list == -1:
                 i += 1
-                tm.update(1)
-            except TimeoutException as ex:
-                dining.driver.quit()
-                print(ex)
-                dining = DiningCode(file = "../connection.txt")
-                print("********RECONNECT********")    
-
-            except ElementClickInterceptedException as ec:
-                time.sleep(5)
-                dining.driver.refresh()
-            except:
-                errors.append(adr)
-                dining.driver.quit()
-    pickle.dump(errors, open("./error_address.txt", "wb"))
+                break
+            for r in rtr_list[40:]:
+                # print(r)
+                siksin.get_one_info(r)
+                siksin.get_one_menus()
+                siksin.get_one_rvs()
+                # 하나 크롤링 끝!
+                    # siksin.driver.close()
+            i += 1
+            tm.update(1)
+        except TimeoutException as ex:
+            siksin.driver.quit()
+            print(ex)
+            siksin = Siksin(file = "../connection.txt")
+            print("******** RECONNECT ********")
+        except ElementClickInterceptedException as ec:
+            time.sleep(5)
+            siksin.driver.refresh()
+        except Exception as e:
+            print(adr + ": " + e)
+            # i += 100
+            errors = errors.append(adr)
+            i += 1
+            siksin.driver.quit()
+            siksin = Siksin(file = "../connection.txt")
+            print("****** QUIT & RECONNECT ******")
+pickle.dump(errors, open("./error_address.txt", "wb"))

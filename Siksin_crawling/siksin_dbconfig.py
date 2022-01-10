@@ -34,7 +34,7 @@ COMMENT '식신 식당 정보';
 """
 
 ss_menu = """
-CREATE TABLE siksin_men신
+CREATE TABLE siksin_menu
 (
     _id INT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "ID",
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성 일시',
@@ -56,9 +56,8 @@ CREATE TABLE siksin_reviews
     rname VARCHAR(32) COMMENT '식당명',
     rid VARCHAR(50) COMMENT '식신 식당id',
     reviewer  VARCHAR(50) COMMENT '리뷰어 이름',
-    reviewer_info VARCHAR(50) COMMENT '리뷰어 정보',
+    heart INT COMMENT '리뷰 좋아요 수',
     star DECIMAL(2,1) COMMENT '5점만점 점수',
-    date DATETIME COMMENT '리뷰 등록 날짜',
     review VARCHAR(255) COMMENT '리뷰내용'
 )
 COMMENT '식신 리뷰 정보';
@@ -82,6 +81,6 @@ if __name__=="__main__":
     cont._connection_info()
 
     table_creation(cont, tformat = ss_res)
-    # table_creation(cont, tformat = ss_menu)
-    # table_creation(cont, tformat = ss_rev)
+    table_creation(cont, tformat = ss_menu)
+    table_creation(cont, tformat = ss_rev)
     cont.curs.close()
