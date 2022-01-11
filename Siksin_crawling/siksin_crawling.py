@@ -58,19 +58,30 @@ class Siksin():
         self.one_name = ''
 
         # 주소지 받아오기
+<<<<<<< HEAD
+        self.controller.curs.execute('SELECT DISTINCT CONCAT(sido, " ",dong) as adr FROM Address;')
+=======
         self.controller.curs.execute('SELECT DISTINCT CONCAT(sigungu, " ",dong) as adr FROM Address;')
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         self.ADR = [f[0].replace("세종특별자치시 세종특별자치시", "세종특별자치시") 
                     for f in self.controller.curs.fetchall() 
                     if (f[0] != None) and (f[0] != "세종특별자치시 (알수없음)")]
 
 
     def get_all_rtr(self, address : str):
+<<<<<<< HEAD
+        # 위치로 페이지 들어가기
+        url = f'https://www.siksinhot.com/search?keywords={address}'
+        self.driver.get(url)
+
+=======
         # 페이지 들어가기
         url = f'https://www.siksinhot.com/search?keywords={address}'
         self.driver.get(url)
         # 핫플레이스 태그 없으면 통과
         if '핫플레이스' not in self.driver.find_element_by_css_selector('div.area_recommand_tag').text:
             return -1
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         # 더보기 클릭
         while True:
             try:
@@ -80,15 +91,25 @@ class Siksin():
             except:
                 break
 
+<<<<<<< HEAD
+        # 더보기 한 상태로 식당 리스트 가져오기 : 광고 제거 잘 되는지 검사?
+        res_list = [res for res in self.driver.find_elements_by_css_selector('#schMove1 > div.listTy1 > ul > li')] 
+=======
         # 더보기 한 상태로 식당 리스트 가져오기
         res_list = [res.find_element_by_css_selector('a').get_attribute('href') 
                     for res in self.driver.find_elements_by_css_selector('#schMove1 > div.listTy1 > ul > li')] 
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         return res_list
 
     
     def get_one_info(self, one):
+<<<<<<< HEAD
+        # self.driver.switch_to.window(self.driver.window_handles[0])
+        self.one_url = one.find_element_by_css_selector("a").get_attribute('href')
+=======
         self.driver.get(one)
         self.one_url = one
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         self.one_id = re.findall('/P/([0-9]+)', self.one_url)[0]
 
         # 중복 체크
@@ -111,12 +132,21 @@ class Siksin():
                 self.driver.refresh()
 
         # 주차 없을 수 있음
+<<<<<<< HEAD
+        try: one_info = re.findall('(.*)([0-9][.][0-9]|평가중).*(주차|발렛)', self.one.find_element_by_css_selector('h3').text)
+        except: one_info = re.findall('(.*)([0-9][.][0-9]|평가중)', self.one.find_element_by_css_selector('h3').text)
+
+        # 이름
+        try: one_name = one_info[0]
+        except: one_name = ""
+=======
         try: one_info = re.findall('(.*)([0-9][.][0-9]|평가중).*(주차|발렛)?', self.one.find_element_by_css_selector('h3').text)[0]
         except: one_info = re.findall('(.*)([0-9][.][0-9]|평가중)', self.one.find_element_by_css_selector('h3').text)[0]
 
         # 이름
         try: self.one_name = one_info[0]
         except: self.one_name = ""
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         
         # 사용자 평점
         try: one_star = float(one_info[1])
@@ -144,10 +174,13 @@ class Siksin():
                         if x.text != '']
         except: one_fv = [0] * 4
 
+<<<<<<< HEAD
+=======
         # 전화
         try: one_phone = self.driver.find_element_by_css_selector('div.p_tel p').text
         except: one_phone = ""
 
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         # 식당 정보 입력
         # 업데이트
         self.controller.curs.execute(f"""SELECT count(*) FROM siksin_restaurants
@@ -157,7 +190,7 @@ class Siksin():
             self.controller.insert('siksin_restaurants', 
             {
                 'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'rname': self.one_name,
+                'rname': one_name,
                 'rid': self.one_id, 
                 'main_category': one_category[0].strip(),
                 'sub_category' : one_category[1].strip(),
@@ -165,6 +198,25 @@ class Siksin():
                 'favorite' : one_fv[1],
                 'address' : one_adr.text,
                 'road_address' : one_road,
+<<<<<<< HEAD
+                'phone' : self.driver.find_element_by_css_selector('div.p_tel p').text,
+                'parking' : one_parking,
+                'view' : one_fv[2]
+            })
+                
+    def get_one_menus(self):
+        # 안 열려 있으면 열기 
+        if len(self.driver.window_handles) == 1: self.one_url.click()
+        self.driver.switch_to.window(self.driver.window_handles[1])
+        # 메뉴 더보기
+        try:
+            self.driver.find_element_by_css_selector('#div_detail div.menu-info a.more-btn').click()
+        except:
+            pass
+        
+        menu = [m.text.replace("'", '"') for m in self.driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.l-txt.Restaurant_MenuItem') if m.text != '']
+        price = [p.text for p in self.driver.find_elements_by_css_selector('ul.list.Restaurant_MenuList li p.r-txt.Restaurant_MenuPrice') if p.text != '']
+=======
                 'phone' : one_phone,
                 'parking' : one_parking,
                 'view' : one_fv[2]
@@ -173,6 +225,7 @@ class Siksin():
     
     def get_one_menus(self):        
         menu = [m.text.replace("'", '"').split("\n") for m in self.driver.find_elements_by_css_selector('ul.menu_ul > li') if m.text != '']
+>>>>>>> 662adc44be49c1bb66c1277b14fcf39455533d12
         
         for m in menu:
             # 중복 체크
