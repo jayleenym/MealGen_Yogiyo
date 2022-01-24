@@ -1,15 +1,15 @@
-import datetime
-import math
+# import datetime
+# import math
 import os, sys
-import time
-import numpy as np
+# import time
+# import numpy as np
 import pandas as pd
-from tqdm import tqdm
+# from tqdm import tqdm
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 # db management libraries
 import pymysql
-from dbconfig import reduce_mem_usage
+# from dbconfig import reduce_mem_usage
 from controller import MysqlController
 
 folder_path = '/Users/yejin/Downloads/202109_/'

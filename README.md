@@ -1,14 +1,3 @@
-# Yogiyo
-
-this repository is for crawling restaurant's menu & reviews in yogiyo, and preprocessing data.
-
-## 사용중인 Table
-- Address : 기초번호 위치 정보 DB
-- menu_info, restaurant_info, reviews
-- seoul_menu, STD_MENU: 서울 식당 메뉴 표준화 작업
-- user_info
-- user_comp, user_predict
-
 ## 기초번호 위치정보DB
 - 주소 출처: [도로명주소 개발자센터](https://www.juso.go.kr/addrlink/addressBuildDevNew.do?menu=jusuip)
 <!-- - ubuntu 환경에서 파일 다운로드 (202109 기준, 성공여부 모름)
