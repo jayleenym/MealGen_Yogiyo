@@ -28,15 +28,15 @@ import pymysql
 from controller import MysqlController
 
 
-
 options = webdriver.ChromeOptions()
-# options.add_argument("--headless")
+options.add_argument("--headless")
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 
 # Path
-chromedriver_path = '/Users/yejin/Downloads/chromedriver' # mac
+# chromedriver_path = '/Users/yejin/Downloads/chromedriver' # mac
 # chromedriver_path = 'C://Users//user//Desktop//chromedriver' # window
+chromedriver_path = "/home/ubuntu/chromedriver" # ubuntu
 
 class DiningCode():
     def __init__(self, file = None):
@@ -55,10 +55,8 @@ class DiningCode():
         self.one_id = ''
         self.one_url = ''
         # 주소지 받아오기
-        self.controller.curs.execute('SELECT DISTINCT CONCAT(sido, " ", sigungu, " ",dong) as adr FROM Address;')
-        self.ADR = [f[0].replace("세종특별자치시 세종특별자치시", "세종특별자치시") 
-                    for f in self.controller.curs.fetchall() 
-                    if (f[0] != None) and (f[0] != "세종특별자치시 세종특별자치시 (알수없음)")]
+        self.controller.curs.execute('SELECT DISTINCT CONCAT(sigungu, " ",dong) as adr FROM Address WHERE sido = "세종특별자치시";')
+        self.ADR = ADR = [f[0] for f in self.controller.curs.fetchall() if re.sub('세종특별자치시 ([(]알수없음[)])$', '', str(f[0])) != ""]
 
 
     def get_all_rtr(self, address : str):
@@ -71,10 +69,8 @@ class DiningCode():
         # 더보기 클릭(최대 100개)
         while True:
             try:
-                # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
                 self.driver.find_element_by_css_selector('#div_list_more').click()
-                # 밑바닥 클릭
-                self.driver.find_element_by_css_selector('#contents > div.localeft-cont > div:nth-child(3)').click()
                 time.sleep(1.5)
             except:
                 break
@@ -91,8 +87,7 @@ class DiningCode():
 
         # 중복 체크
         self.controller.curs.execute(f"""SELECT count(*) FROM diningcode_restaurants
-                                        WHERE rid = '{self.one_id}' 
-                                        AND parking is not NULL;""")
+                                        WHERE rid = '{self.one_id}';""")
         if self.controller.curs.fetchone()[0] >= 1: return
         
         # 클릭해서 open & driver 옮기기
@@ -126,36 +121,20 @@ class DiningCode():
             one_category = self.driver.find_element_by_css_selector('div.btxt').text.split('|')[1].strip()
         except:
             one_category = ''
-        
-        # 주차 여부 없을수도
-        try:
-            one_parking = int('주차' in self.driver.find_element_by_css_selector('ul.list li.char').text)
-        except:
-            one_parking = 0
-        
+
         # 식당 정보 입력
-        # 업데이트
-        self.controller.curs.execute(f"""SELECT count(*) FROM diningcode_restaurants
-                                        WHERE rid = '{self.one_id}';""")
-        if self.controller.curs.fetchone()[0] >= 1: 
-            self.controller.curs.execute(f"""
-                UPDATE diningcode_restaurants 
-                SET parking = '{one_parking}', updated_at = now()
-                WHERE rid = '{self.one_id}';""")
-            self.controller.conn.commit()
-        else:
-            self.controller.insert('diningcode_restaurants', {
-                'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'rname': self.one_name,
-                'rid': self.one_id, 
-                'category': one_category,
-                'grade' : one_grade,
-                'star' : one_star,
-                'favorite' : int(self.driver.find_element_by_css_selector('div.favor-pic-appra i').text),
-                'address' : self.driver.find_element_by_css_selector('li.locat').text,
-                'phone' : self.driver.find_element_by_css_selector('li.tel').text,
-                'parking' : one_parking
-            })
+        self.controller.insert('diningcode_restaurants', {
+            'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'rname': self.one_name,
+            'rid': self.one_id, 
+            'category': one_category,
+            'grade' : one_grade,
+            'star' : one_star,
+            'favorite' : int(self.driver.find_element_by_css_selector('div.favor-pic-appra i').text),
+            'address' : self.driver.find_element_by_css_selector('li.locat').text,
+            'phone' : self.driver.find_element_by_css_selector('li.tel').text,
+            'parking' : int('주차' in self.driver.find_element_by_css_selector('ul.list li.char').text)
+        })
 
     
     def get_one_menus(self):
@@ -232,24 +211,6 @@ class DiningCode():
                     d = datetime.datetime.strptime("2021년 "+date, "%Y년 %m월 %d일")
                 if re.match('[0-9]+일 전', date):
                     d = datetime.datetime.now() - datetime.timedelta(days = int(re.findall('([0-9]+)일 전', date)[0]))
-                if re.match('[0-9]+시간 전', date):
-                    d = datetime.datetime.now() - datetime.timedelta(hours = int(re.findall('[0-9]+시간 전', date)[0]))
-                if re.match('[0-9]+분 전', date):
-                    d = datetime.datetime.now() - datetime.timedelta(minutes= int(re.findall('[0-9]+분 전', date)[0]))
-                
-                if re.match("어제 [가-힇]+ [0-9]+시 [0-9]+분", date):
-                    yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
-                    hr = int(re.findall("([0-9]+)시", date)[0])
-                    mt = int(re.findall("([0-9]+)분", date)[0])
-                    if re.findall("([가-힇]+) [0-9]+시", date)[0] == '오후': hr += 12
-                    d = datetime.datetime(yesterday.year, yesterday.month, yesterday.day, hr, mt)
-                if re.match("오늘 [가-힇]+ [0-9]+시 [0-9]+분", date):
-                    today = datetime.datetime.now()
-                    hr = int(re.findall("([0-9]+)시", date)[0])
-                    mt = int(re.findall("([0-9]+)분", date)[0])
-                    if re.findall("([가-힇]+) [0-9]+시", date)[0] == '오후': hr += 12
-                    d = datetime.datetime(today.year, today.month, today.day, hr, mt)
-                
             if type(d) == datetime.datetime:
                 d = datetime.datetime.strftime(d, '%Y-%m-%d')
             else:
