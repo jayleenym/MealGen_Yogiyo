@@ -48,8 +48,3 @@
 |delivery|배달 평점|
 |rating|전체 평점(0점 없음)|
 |like_dislike|전체 평점이 2.5이상이면 1, 미만이면 0|
-
-
-(참고 이미지)
-![스크린샷 2022-01-24 오후 1.38.25.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/434c09ae-3a3f-4af4-99f2-c777bd68d287/스크린샷_2022-01-24_오후_1.38.25.png)
-![스크린샷 2022-01-24 오후 1.42.05.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f1bf817a-0c48-4dbe-8968-4d2eb12aa39f/스크린샷_2022-01-24_오후_1.42.05.png)
